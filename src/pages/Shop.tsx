@@ -4,6 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { CandleCard } from "@/components/candle/CandleCard";
 import { candles, collections, getBestsellers, getCandlesByCollection } from "@/data/candles";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,29 +33,28 @@ const Shop = () => {
       <Header />
       <main className="flex-1 pt-20">
         {/* Hero */}
-        <section className="py-16 lg:py-24 text-center">
+        <section className="py-20 lg:py-28 text-center border-b border-border/30">
           <div className="container mx-auto px-6 lg:px-12">
-            <p className="text-[11px] uppercase tracking-[0.4em] text-primary mb-4">
+            <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium opacity-0 animate-fade-in">
               Shop
             </p>
-            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl text-foreground mb-4">
+            <h1 className="font-display text-4xl md:text-5xl lg:text-6xl text-foreground mb-6 opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
               {pageTitle}
             </h1>
-            <p className="text-muted-foreground max-w-xl mx-auto">
+            <p className="text-muted-foreground max-w-lg mx-auto opacity-0 animate-fade-in" style={{ animationDelay: '200ms' }}>
               {pageDescription}
             </p>
           </div>
         </section>
 
         {/* Filters */}
-        <section className="border-y border-border/50 py-6">
+        <section className="py-6 border-b border-border/30 bg-secondary/10 sticky top-20 z-40 backdrop-blur-sm">
           <div className="container mx-auto px-6 lg:px-12">
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <Button
                 variant={!collectionSlug && !showBestsellers ? "default" : "outline"}
                 size="sm"
                 onClick={clearFilters}
-                className="text-xs uppercase tracking-wider"
               >
                 All
               </Button>
@@ -64,7 +64,6 @@ const Shop = () => {
                   variant={collectionSlug === col.slug ? "default" : "outline"}
                   size="sm"
                   onClick={() => setSearchParams({ collection: col.slug })}
-                  className="text-xs uppercase tracking-wider"
                 >
                   {col.name}
                 </Button>
@@ -73,7 +72,6 @@ const Shop = () => {
                 variant={showBestsellers ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSearchParams({ bestsellers: "true" })}
-                className="text-xs uppercase tracking-wider"
               >
                 Bestsellers
               </Button>
@@ -85,15 +83,21 @@ const Shop = () => {
         <section className="py-16 lg:py-24">
           <div className="container mx-auto px-6 lg:px-12">
             {displayCandles.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12">
-                {displayCandles.map((candle, index) => (
-                  <CandleCard key={candle.id} candle={candle} index={index} />
-                ))}
-              </div>
+              <>
+                <p className="text-xs text-muted-foreground text-center mb-12 uppercase tracking-wider">
+                  {displayCandles.length} {displayCandles.length === 1 ? 'product' : 'products'}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-10">
+                  {displayCandles.map((candle, index) => (
+                    <CandleCard key={candle.id} candle={candle} index={index} />
+                  ))}
+                </div>
+              </>
             ) : (
-              <div className="text-center py-16">
-                <p className="text-muted-foreground">No candles found in this collection.</p>
-                <Button onClick={clearFilters} variant="outline" className="mt-4">
+              <div className="text-center py-20">
+                <p className="font-display text-2xl text-foreground mb-4">No candles found</p>
+                <p className="text-muted-foreground mb-8">Try selecting a different collection</p>
+                <Button onClick={clearFilters} variant="gold">
                   View All Candles
                 </Button>
               </div>
