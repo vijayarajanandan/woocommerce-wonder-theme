@@ -6,8 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import { CartSidebar } from "@/components/cart/CartSidebar";
 import Index from "./pages/Index";
-import Products from "./pages/Products";
-import ProductDetail from "./pages/ProductDetail";
+import Shop from "./pages/Shop";
+import CandleDetail from "./pages/CandleDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,8 +22,8 @@ const App = () => (
           <CartSidebar />
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:slug" element={<ProductDetail />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/shop/:slug" element={<CandleDetail />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
