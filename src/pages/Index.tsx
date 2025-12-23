@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Flame, Truck, Leaf, Award } from "lucide-react";
+import { ArrowRight, Flame, Truck, Leaf, Award, Hand, Droplets, Timer, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -134,22 +134,49 @@ const Index = () => {
                 </h2>
                 <p className="text-muted-foreground leading-relaxed mb-10">
                   Every Scentora candle is hand-poured in small batches using 100% natural soy wax 
-                  and premium fragrance oils. Our wicks are lead-free cotton for a clean, even burn. 
-                  We source only the finest ingredients to create fragrances that transform your space 
-                  into a sanctuary of calm and sophistication.
+                  and premium fragrance oils. Our wicks are lead-free cotton for a clean, even burn.
                 </p>
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="text-center p-4 border border-border/30">
-                    <p className="font-display text-3xl lg:text-4xl text-primary">60+</p>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mt-2">Hours Burn</p>
+                
+                {/* Feature Points with Icons */}
+                <div className="space-y-6 mb-10">
+                  <div className="flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-12 h-12 border border-primary/30 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all duration-300">
+                      <Droplets className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-display text-lg text-foreground mb-1">100% Natural Soy Wax</h4>
+                      <p className="text-sm text-muted-foreground">Clean-burning, sustainable, and eco-friendly sourced from renewable resources.</p>
+                    </div>
                   </div>
-                  <div className="text-center p-4 border border-border/30">
-                    <p className="font-display text-3xl lg:text-4xl text-primary">100%</p>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mt-2">Natural Soy</p>
+                  
+                  <div className="flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-12 h-12 border border-primary/30 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all duration-300">
+                      <Hand className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-display text-lg text-foreground mb-1">Hand-Poured with Care</h4>
+                      <p className="text-sm text-muted-foreground">Each candle is crafted in small batches by skilled artisans.</p>
+                    </div>
                   </div>
-                  <div className="text-center p-4 border border-border/30">
-                    <p className="font-display text-3xl lg:text-4xl text-primary">Hand</p>
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mt-2">Poured</p>
+                  
+                  <div className="flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-12 h-12 border border-primary/30 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all duration-300">
+                      <Sparkles className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-display text-lg text-foreground mb-1">Premium Fragrance Oils</h4>
+                      <p className="text-sm text-muted-foreground">Expertly blended using the finest ingredients for lasting scent throw.</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4 group">
+                    <div className="flex-shrink-0 w-12 h-12 border border-primary/30 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/5 transition-all duration-300">
+                      <Timer className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-display text-lg text-foreground mb-1">60+ Hours Burn Time</h4>
+                      <p className="text-sm text-muted-foreground">Long-lasting enjoyment with an even, clean burn every time.</p>
+                    </div>
                   </div>
                 </div>
               </div>
