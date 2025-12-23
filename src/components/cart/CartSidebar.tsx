@@ -1,4 +1,4 @@
-import { X, Plus, Minus, ShoppingBag } from "lucide-react";
+import { X, Plus, Minus, ShoppingBag, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,22 +13,28 @@ export const CartSidebar = () => {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-background/60 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-background/70 backdrop-blur-sm z-50"
         onClick={closeCart}
       />
 
       {/* Sidebar */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background border-l border-border z-50 animate-slide-in">
+      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-background border-l border-border/30 z-50 animate-slide-in">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between px-8 py-6 border-b border-border">
+          <div className="flex items-center justify-between px-8 py-6 border-b border-border/30">
             <div className="flex items-center gap-3">
               <ShoppingBag className="h-5 w-5 text-primary" />
               <h2 className="font-display text-xl tracking-wider">
-                Your Cart ({itemCount})
+                Your Cart
               </h2>
+              <span className="text-xs text-muted-foreground">({itemCount})</span>
             </div>
-            <Button variant="ghost" size="icon" onClick={closeCart} className="text-muted-foreground hover:text-foreground">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={closeCart} 
+              className="text-muted-foreground hover:text-foreground"
+            >
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -36,12 +42,14 @@ export const CartSidebar = () => {
           {/* Cart Items */}
           {items.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-              <ShoppingBag className="h-16 w-16 text-muted-foreground/30 mb-6" />
-              <p className="font-display text-xl text-foreground mb-2">Your cart is empty</p>
+              <div className="w-20 h-20 border border-border/50 rounded-full flex items-center justify-center mb-6">
+                <ShoppingBag className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <p className="font-display text-2xl text-foreground mb-3">Your cart is empty</p>
               <p className="text-sm text-muted-foreground mb-8">
                 Discover our luxury candle collection
               </p>
-              <Button onClick={closeCart} asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Button onClick={closeCart} asChild variant="gold">
                 <Link to="/shop">Shop Now</Link>
               </Button>
             </div>
@@ -50,75 +58,96 @@ export const CartSidebar = () => {
               <ScrollArea className="flex-1 px-8">
                 <div className="py-6 space-y-6">
                   {items.map((item) => (
-                    <div key={item.candle.id} className="flex gap-4">
-                      <div className="w-24 h-32 bg-secondary/50 flex-shrink-0">
+                    <div key={item.candle.id} className="flex gap-5 pb-6 border-b border-border/20 last:border-0">
+                      <Link 
+                        to={`/shop/${item.candle.slug}`} 
+                        onClick={closeCart}
+                        className="w-24 h-32 bg-secondary/30 flex-shrink-0 overflow-hidden group"
+                      >
                         <img
                           src={item.candle.images[0]}
                           alt={item.candle.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
                         />
-                      </div>
+                      </Link>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+                        <p className="text-[9px] uppercase tracking-[0.2em] text-primary/80 mb-1">
                           {item.candle.collection}
                         </p>
-                        <h3 className="font-display text-lg text-foreground mt-1">
+                        <Link 
+                          to={`/shop/${item.candle.slug}`} 
+                          onClick={closeCart}
+                          className="font-display text-lg text-foreground hover:text-primary transition-colors block mb-1"
+                        >
                           {item.candle.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        </Link>
+                        <p className="text-xs text-muted-foreground mb-3">
                           {item.candle.size} · {item.candle.weight}
                         </p>
-                        <p className="text-sm text-foreground mt-2">
+                        <p className="text-sm font-medium text-foreground mb-3">
                           ${item.candle.price}
                         </p>
-                        <div className="flex items-center gap-3 mt-3">
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-7 w-7 border-border"
+                            className="h-8 w-8"
                             onClick={() => updateQuantity(item.candle.id, item.quantity - 1)}
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="text-sm w-6 text-center">{item.quantity}</span>
+                          <span className="text-sm w-8 text-center font-medium">{item.quantity}</span>
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-7 w-7 border-border"
+                            className="h-8 w-8"
                             onClick={() => updateQuantity(item.candle.id, item.quantity + 1)}
                           >
                             <Plus className="h-3 w-3" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="ml-auto text-xs text-muted-foreground hover:text-destructive"
+                            onClick={() => removeItem(item.candle.id)}
+                          >
+                            Remove
+                          </Button>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => removeItem(item.candle.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                   ))}
                 </div>
               </ScrollArea>
 
               {/* Footer */}
-              <div className="border-t border-border px-8 py-6 space-y-4">
+              <div className="border-t border-border/30 px-8 py-6 space-y-4 bg-secondary/10">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm uppercase tracking-wider text-muted-foreground">Subtotal</span>
-                  <span className="font-display text-xl text-foreground">
+                  <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Subtotal</span>
+                  <span className="font-display text-2xl text-foreground">
                     ${subtotal}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Shipping calculated at checkout
+                  Shipping & taxes calculated at checkout
                 </p>
-                <Button asChild size="lg" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" onClick={closeCart}>
-                  <Link to="/checkout">Checkout</Link>
+                <Button 
+                  asChild 
+                  size="lg" 
+                  className="w-full"
+                  onClick={closeCart}
+                >
+                  <Link to="/checkout" className="flex items-center justify-center gap-2">
+                    Checkout
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </Button>
-                <Button variant="ghost" size="lg" className="w-full text-muted-foreground hover:text-foreground" onClick={closeCart}>
+                <Button 
+                  variant="ghost" 
+                  size="lg" 
+                  className="w-full text-muted-foreground hover:text-foreground" 
+                  onClick={closeCart}
+                >
                   Continue Shopping
                 </Button>
               </div>
