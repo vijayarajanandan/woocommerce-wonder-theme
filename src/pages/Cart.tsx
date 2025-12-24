@@ -73,17 +73,17 @@ const Cart = () => {
 
         <h1 className="font-display text-4xl text-foreground mb-8">Shopping Cart</h1>
 
-        <div className="grid lg:grid-cols-3 gap-12">
+        <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
           {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-6">
             {items.map((item) => (
               <div 
                 key={item.candle.id} 
-                className="flex gap-6 p-6 bg-secondary/20 border border-border/30 rounded-lg"
+                className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6 bg-secondary/20 border border-border/30 rounded-lg"
               >
                 <Link 
                   to={`/shop/${item.candle.slug}`}
-                  className="w-28 h-36 bg-secondary/30 flex-shrink-0 overflow-hidden rounded group"
+                  className="w-full sm:w-24 h-32 sm:h-36 bg-secondary/30 flex-shrink-0 overflow-hidden rounded group"
                 >
                   <img
                     src={item.candle.images[0]}
@@ -98,46 +98,46 @@ const Cart = () => {
                   </p>
                   <Link 
                     to={`/shop/${item.candle.slug}`}
-                    className="font-display text-xl text-foreground hover:text-primary transition-colors block mb-1"
+                    className="font-display text-lg sm:text-xl text-foreground hover:text-primary transition-colors block mb-1"
                   >
                     {item.candle.name}
                   </Link>
-                  <p className="text-xs text-muted-foreground mb-4">
-                    {item.candle.size} · {item.candle.weight} · {item.candle.burnTime}
+                  <p className="text-xs text-muted-foreground mb-3 sm:mb-4">
+                    {item.candle.size} · {item.candle.weight}
                   </p>
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9"
+                        className="h-8 w-8 sm:h-9 sm:w-9"
                         onClick={() => updateQuantity(item.candle.id, item.quantity - 1)}
                       >
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
-                      <span className="text-sm w-8 text-center font-medium">{item.quantity}</span>
+                      <span className="text-sm w-6 sm:w-8 text-center font-medium">{item.quantity}</span>
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9"
+                        className="h-8 w-8 sm:h-9 sm:w-9"
                         onClick={() => updateQuantity(item.candle.id, item.quantity + 1)}
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                     
-                    <div className="flex items-center gap-6">
-                      <p className="font-display text-xl text-foreground">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                      <p className="font-display text-lg sm:text-xl text-foreground">
                         {formatPrice(item.candle.price * item.quantity)}
                       </p>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
                         onClick={() => removeItem(item.candle.id)}
                       >
-                        <Trash2 className="h-5 w-5" />
+                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
                     </div>
                   </div>
