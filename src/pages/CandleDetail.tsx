@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
 import { CandleCard } from "@/components/candle/CandleCard";
-
+import { formatPrice } from "@/lib/currency";
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const candle = getCandleBySlug(slug || "");
@@ -114,9 +114,9 @@ const CandleDetail = () => {
 
               {/* Price */}
               <div className="flex items-baseline gap-4 mb-8 pb-8 border-b border-border/30">
-                <span className="font-display text-4xl text-foreground">${candle.price}</span>
+                <span className="font-display text-4xl text-foreground">{formatPrice(candle.price)}</span>
                 {candle.regularPrice && (
-                  <span className="text-xl text-muted-foreground line-through">${candle.regularPrice}</span>
+                  <span className="text-xl text-muted-foreground line-through">{formatPrice(candle.regularPrice)}</span>
                 )}
               </div>
 
@@ -195,7 +195,7 @@ const CandleDetail = () => {
               <div className="grid grid-cols-3 gap-4 pt-6 border-t border-border/30">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Truck className="h-4 w-4" />
-                  <span className="text-[10px] uppercase tracking-wider">Free Ship $100+</span>
+                  <span className="text-[10px] uppercase tracking-wider">Free Ship ₹2000+</span>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <RotateCcw className="h-4 w-4" />

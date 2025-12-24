@@ -3,6 +3,7 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
+import { formatPrice } from "@/lib/currency";
 
 export const CartSidebar = () => {
   const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal, itemCount } = useCart();
@@ -85,7 +86,7 @@ export const CartSidebar = () => {
                           {item.candle.size} · {item.candle.weight}
                         </p>
                         <p className="text-sm font-medium text-foreground mb-3">
-                          ${item.candle.price}
+                          {formatPrice(item.candle.price)}
                         </p>
                         <div className="flex items-center gap-2">
                           <Button
@@ -125,7 +126,7 @@ export const CartSidebar = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Subtotal</span>
                   <span className="font-display text-2xl text-foreground">
-                    ${subtotal}
+                    {formatPrice(subtotal)}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">

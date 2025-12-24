@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook, Mail } from "lucide-react";
+import scentoraIcon from "@/assets/scentora-icon.png";
 
 export const Footer = () => {
   return (
@@ -9,17 +10,24 @@ export const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-2">
             <Link to="/" className="inline-block group">
-              <span className="font-display text-2xl tracking-[0.2em] text-foreground group-hover:text-primary transition-colors">
-                SCENTORA
-              </span>
+              <img 
+                src={scentoraIcon} 
+                alt="Scentora" 
+                className="h-16 w-auto transition-opacity duration-300 group-hover:opacity-80"
+              />
             </Link>
             <p className="mt-6 text-sm text-muted-foreground leading-relaxed max-w-sm">
               Handcrafted luxury candles, thoughtfully created to transform your space 
-              into a sanctuary of scent and serenity.
+              into a sanctuary of scent and serenity. Natural wax, non-toxic, handmade with love.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              www.thescentora.com
             </p>
             <div className="mt-8 flex gap-4">
               <a
-                href="#"
+                href="https://instagram.com/thescentora"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-10 h-10 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
                 aria-label="Instagram"
               >
@@ -33,7 +41,7 @@ export const Footer = () => {
                 <Facebook className="h-4 w-4" />
               </a>
               <a
-                href="#"
+                href="mailto:hello@thescentora.com"
                 className="w-10 h-10 border border-border/50 flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-colors"
                 aria-label="Email"
               >
@@ -78,13 +86,13 @@ export const Footer = () => {
             </h4>
             <ul className="space-y-4">
               <li>
-                <Link to="/shipping" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Shipping & Returns
+                <Link to="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Shipping Policy
                 </Link>
               </li>
               <li>
-                <Link to="/candle-care" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Candle Care
+                <Link to="/refund-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Refund Policy
                 </Link>
               </li>
               <li>
@@ -106,11 +114,11 @@ export const Footer = () => {
             © {new Date().getFullYear()} SCENTORA. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors tracking-wider">
+            <Link to="/privacy-policy" className="text-xs text-muted-foreground hover:text-primary transition-colors tracking-wider">
               Privacy Policy
             </Link>
-            <Link to="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors tracking-wider">
-              Terms of Service
+            <Link to="/terms-conditions" className="text-xs text-muted-foreground hover:text-primary transition-colors tracking-wider">
+              Terms & Conditions
             </Link>
           </div>
         </div>
