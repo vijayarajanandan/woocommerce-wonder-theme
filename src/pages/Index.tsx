@@ -99,8 +99,8 @@ const Index = () => {
             className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-0 animate-fade-in" 
             style={{ animationDelay: '1000ms' }}
           >
-            <Flame className="h-5 w-5 text-primary animate-pulse" />
-            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Discover</span>
+            <Flame className="h-5 w-5 text-primary animate-pulse mx-auto" />
+            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground text-center">Discover</span>
           </div>
         </section>
 
@@ -109,16 +109,16 @@ const Index = () => {
           <div className="container mx-auto px-6 lg:px-12">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0 md:divide-x divide-border/30">
               <div className="flex items-center justify-center gap-4 py-4">
-                <Truck className="h-5 w-5 text-primary" />
-                <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Free Shipping Over $100</span>
-              </div>
-              <div className="flex items-center justify-center gap-4 py-4">
                 <Leaf className="h-5 w-5 text-primary" />
-                <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">100% Natural Soy Wax</span>
+                <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground text-center">100% Natural Soy Wax</span>
               </div>
               <div className="flex items-center justify-center gap-4 py-4">
                 <Award className="h-5 w-5 text-primary" />
-                <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground">Handcrafted Quality</span>
+                <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground text-center">Handcrafted Quality</span>
+              </div>
+              <div className="flex items-center justify-center gap-4 py-4">
+                <Timer className="h-5 w-5 text-primary" />
+                <span className="text-xs uppercase tracking-[0.15em] text-muted-foreground text-center">40+ Hours Burn Time</span>
               </div>
             </div>
           </div>
@@ -303,10 +303,10 @@ const Index = () => {
         <section className="py-24 lg:py-32 bg-secondary/20 border-y border-border/30">
           <div className="container mx-auto px-6 lg:px-12">
             <div className="text-center mb-16">
-              <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
+              <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium text-center">
                 Discover
               </p>
-              <h2 className="font-display text-4xl md:text-5xl text-foreground">
+              <h2 className="font-display text-4xl md:text-5xl text-foreground text-center">
                 Our Collections
               </h2>
             </div>
@@ -321,10 +321,10 @@ const Index = () => {
                   <img
                     src={collectionImages[collection.slug] || collection.image}
                     alt={collection.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-90"
                   />
-                  <div className="absolute inset-0 bg-background/60" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-background/20" />
+                  <div className="absolute inset-0 bg-background/40" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
                     <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors duration-300">
                       {collection.name}
@@ -339,33 +339,6 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Newsletter */}
-        <section className="py-24 lg:py-32">
-          <div className="container mx-auto px-6 lg:px-12 max-w-2xl text-center">
-            <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
-              Stay Illuminated
-            </p>
-            <h2 className="font-display text-4xl md:text-5xl text-foreground mb-6">
-              Join Our Circle
-            </h2>
-            <p className="text-muted-foreground mb-10 leading-relaxed">
-              Be the first to discover new collections, exclusive offers, and the art of scent.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-5 py-3 bg-secondary/30 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors text-sm"
-              />
-              <Button variant="default">
-                Subscribe
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              No spam, unsubscribe anytime.
-            </p>
-          </div>
-        </section>
       </main>
 
       <Footer />

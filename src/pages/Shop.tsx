@@ -8,8 +8,16 @@ import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/shop/ProductFilters";
 import shopBanner from "@/assets/shop-banner.jpg";
 
+// Get min/max prices from candles
+const getMinMaxPrice = () => {
+  const prices = candles.map(c => c.price);
+  return { min: Math.min(...prices), max: Math.max(...prices) };
+};
+
+const { min: minPrice, max: maxPrice } = getMinMaxPrice();
+
 const defaultFilters: FilterState = {
-  priceRange: [0, 2000],
+  priceRange: [minPrice, maxPrice],
   collections: [],
   scentTypes: [],
   sizes: [],
@@ -32,7 +40,7 @@ const Shop = () => {
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (filters.priceRange[0] > 0 || filters.priceRange[1] < 2000) count++;
+    if (filters.priceRange[0] > minPrice || filters.priceRange[1] < maxPrice) count++;
     if (filters.collections.length > 0) count += filters.collections.length;
     if (filters.scentTypes.length > 0) count += filters.scentTypes.length;
     if (filters.sizes.length > 0) count += filters.sizes.length;
@@ -132,8 +140,8 @@ const Shop = () => {
           </div>
         </section>
 
-        {/* Quick Filters */}
-        <section className="py-6 border-b border-border/30 bg-secondary/10 sticky top-[137px] z-40 backdrop-blur-sm">
+        {/* Quick Filters - Hidden on mobile since we have sidebar filter */}
+        <section className="hidden lg:block py-6 border-b border-border/30 bg-secondary/10">
           <div className="container mx-auto px-6 lg:px-12">
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button
@@ -167,23 +175,25 @@ const Shop = () => {
         {/* Products Grid with Sidebar */}
         <section className="py-16 lg:py-24">
           <div className="container mx-auto px-6 lg:px-12">
-            <div className="flex gap-12">
+            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
               {/* Filters Sidebar */}
               <ProductFilters
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
                 onClearFilters={clearFilters}
                 activeFilterCount={activeFilterCount}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
               />
 
               {/* Products */}
               <div className="flex-1">
                 {displayCandles.length > 0 ? (
                   <>
-                    <p className="text-xs text-muted-foreground text-center lg:text-left mb-12 uppercase tracking-wider">
+                    <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
                       {displayCandles.length} {displayCandles.length === 1 ? 'product' : 'products'}
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-10">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
                       {displayCandles.map((candle, index) => (
                         <CandleCard key={candle.id} candle={candle} index={index} />
                       ))}

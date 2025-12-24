@@ -8,7 +8,7 @@ export const Footer = () => {
     <footer className="bg-secondary/20 border-t border-border/30">
       {/* Newsletter Section */}
       <div className="container mx-auto px-6 lg:px-12 py-12 border-b border-border/30">
-        <div className="max-w-md mx-auto lg:max-w-none lg:mx-0 lg:w-96">
+        <div className="max-w-md mx-auto">
           <NewsletterSignup />
         </div>
       </div>

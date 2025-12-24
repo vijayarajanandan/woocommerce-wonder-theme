@@ -33,6 +33,8 @@ interface ProductFiltersProps {
   onFiltersChange: (filters: FilterState) => void;
   onClearFilters: () => void;
   activeFilterCount: number;
+  minPrice: number;
+  maxPrice: number;
 }
 
 const scentTypes = [
@@ -80,6 +82,8 @@ const FilterContent = ({
   onFiltersChange,
   onClearFilters,
   activeFilterCount,
+  minPrice,
+  maxPrice,
 }: ProductFiltersProps) => {
   const handlePriceChange = (value: number[]) => {
     onFiltersChange({ ...filters, priceRange: [value[0], value[1]] });
@@ -127,8 +131,8 @@ const FilterContent = ({
           <Slider
             value={[filters.priceRange[0], filters.priceRange[1]]}
             onValueChange={handlePriceChange}
-            min={0}
-            max={2000}
+            min={minPrice}
+            max={maxPrice}
             step={100}
             className="w-full"
           />
@@ -231,7 +235,7 @@ export const ProductFilters = (props: ProductFiltersProps) => {
     <>
       {/* Desktop Filters */}
       <div className="hidden lg:block w-64 flex-shrink-0">
-        <div className="sticky top-[200px]">
+        <div className="sticky top-[180px] max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-hide">
           <h3 className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-6 flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4" />
             Filters
@@ -241,7 +245,7 @@ export const ProductFilters = (props: ProductFiltersProps) => {
       </div>
 
       {/* Mobile Filters */}
-      <div className="lg:hidden">
+      <div className="lg:hidden sticky top-[96px] z-30 bg-background py-3 -mx-6 px-6 border-b border-border/30">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="outline" size="sm" className="gap-2">
@@ -254,11 +258,11 @@ export const ProductFilters = (props: ProductFiltersProps) => {
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-80 overflow-y-auto">
+          <SheetContent side="left" className="w-80 flex flex-col">
             <SheetHeader>
               <SheetTitle className="text-left">Filters</SheetTitle>
             </SheetHeader>
-            <div className="mt-6">
+            <div className="mt-6 flex-1 overflow-y-auto">
               <FilterContent {...props} />
             </div>
           </SheetContent>
