@@ -117,45 +117,109 @@ const CandleDetail = () => {
                 <h1 className="font-display text-3xl md:text-4xl lg:text-5xl text-foreground mb-3">{candle.name}</h1>
                 <p className="text-base lg:text-lg text-muted-foreground italic mb-6 lg:mb-8">{candle.tagline}</p>
 
-                <div className="flex items-baseline gap-3 lg:gap-4 mb-4">
-                  <span className="font-display text-2xl lg:text-4xl text-foreground">{formatPrice(candle.price)}</span>
-                  {candle.regularPrice && <span className="text-base lg:text-xl text-muted-foreground line-through">{formatPrice(candle.regularPrice)}</span>}
-                </div>
-
-                <p className="text-muted-foreground leading-relaxed mb-5 text-sm lg:text-base">{candle.description}</p>
-
-                {/* Fragrance Notes - Elegant Card */}
-                <div className="mb-5">
-                  <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">Fragrance Profile</h3>
-                  <div className="grid grid-cols-3 gap-2 lg:gap-3">
-                    <div className="p-2 lg:p-4 bg-secondary/20 border border-border/20 text-center">
-                      <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mb-1">Top</p>
-                      <p className="text-[10px] lg:text-sm text-foreground leading-snug">{candle.fragranceNotes.top.join(", ")}</p>
-                    </div>
-                    <div className="p-2 lg:p-4 bg-secondary/20 border border-border/20 text-center">
-                      <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mb-1">Heart</p>
-                      <p className="text-[10px] lg:text-sm text-foreground leading-snug">{candle.fragranceNotes.heart.join(", ")}</p>
-                    </div>
-                    <div className="p-2 lg:p-4 bg-secondary/20 border border-border/20 text-center">
-                      <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mb-1">Base</p>
-                      <p className="text-[10px] lg:text-sm text-foreground leading-snug">{candle.fragranceNotes.base.join(", ")}</p>
+                <div className="flex flex-col gap-6">
+                  {/* Price */}
+                  <div className="order-1">
+                    <div className="flex items-baseline gap-3 lg:gap-4">
+                      <span className="font-display text-2xl lg:text-4xl text-foreground">{formatPrice(candle.price)}</span>
+                      {candle.regularPrice && (
+                        <span className="text-base lg:text-xl text-muted-foreground line-through">{formatPrice(candle.regularPrice)}</span>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                {/* CTA Row - Qty, Add to Cart, Wishlist all in one line */}
-                <div className="flex items-center gap-2 lg:gap-3 mb-6">
-                  <div className="flex items-center border border-border/50 shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="h-10 w-10 lg:h-12 lg:w-12 hover:text-primary"><Minus className="h-4 w-4" /></Button>
-                    <span className="w-8 lg:w-12 text-center font-medium text-sm">{quantity}</span>
-                    <Button variant="ghost" size="icon" onClick={() => setQuantity((q) => q + 1)} className="h-10 w-10 lg:h-12 lg:w-12 hover:text-primary"><Plus className="h-4 w-4" /></Button>
+                  {/* CTA (Mobile: below price, Desktop: below fragrance) */}
+                  <div className="order-2 lg:order-4">
+                    <div className="flex items-center gap-2 lg:gap-3">
+                      <div className="flex items-center border border-border/50 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                          className="h-10 w-10 lg:h-12 lg:w-12 hover:text-primary"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 lg:w-12 text-center font-medium text-sm">{quantity}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setQuantity((q) => q + 1)}
+                          className="h-10 w-10 lg:h-12 lg:w-12 hover:text-primary"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <Button
+                        ref={addToCartRef}
+                        size="lg"
+                        className="flex-1 h-10 lg:h-12 text-xs lg:text-base px-3 lg:px-6"
+                        onClick={handleAddToCart}
+                        disabled={candle.stockStatus === "outofstock"}
+                      >
+                        {candle.stockStatus === "outofstock" ? "Out of Stock" : "Add to Cart"}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => toggleWishlist(candle)}
+                        className={cn(
+                          "h-10 w-10 lg:h-12 lg:w-12 shrink-0",
+                          isInWishlist(candle.id) && "text-primary border-primary/50 hover:text-primary"
+                        )}
+                      >
+                        <Heart className={cn("h-4 w-4 lg:h-5 lg:w-5", isInWishlist(candle.id) && "fill-current")} />
+                      </Button>
+                    </div>
                   </div>
-                  <Button ref={addToCartRef} size="lg" className="flex-1 h-10 lg:h-12 text-xs lg:text-base px-3 lg:px-6" onClick={handleAddToCart} disabled={candle.stockStatus === 'outofstock'}>
-                    {candle.stockStatus === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
-                  </Button>
-                  <Button variant="outline" size="icon" onClick={() => toggleWishlist(candle)} className={cn("h-10 w-10 lg:h-12 lg:w-12 shrink-0", isInWishlist(candle.id) && "text-primary border-primary/50 hover:text-primary")}>
-                    <Heart className={cn("h-4 w-4 lg:h-5 lg:w-5", isInWishlist(candle.id) && "fill-current")} />
-                  </Button>
+
+                  {/* Description */}
+                  <p className="order-3 lg:order-2 text-muted-foreground leading-relaxed text-sm lg:text-base">
+                    {candle.description}
+                  </p>
+
+                  {/* Fragrance Profile */}
+                  <div className="order-4 lg:order-3">
+                    <h3 className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">
+                      Fragrance Profile
+                    </h3>
+
+                    {/* Mobile layout (keep current design) */}
+                    <div className="lg:hidden grid grid-cols-3 gap-2">
+                      <div className="p-2 bg-secondary/20 border border-border/20 text-center">
+                        <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mb-1">Top</p>
+                        <p className="text-[10px] text-foreground leading-snug">{candle.fragranceNotes.top.join(", ")}</p>
+                      </div>
+                      <div className="p-2 bg-secondary/20 border border-border/20 text-center">
+                        <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mb-1">Heart</p>
+                        <p className="text-[10px] text-foreground leading-snug">{candle.fragranceNotes.heart.join(", ")}</p>
+                      </div>
+                      <div className="p-2 bg-secondary/20 border border-border/20 text-center">
+                        <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mb-1">Base</p>
+                        <p className="text-[10px] text-foreground leading-snug">{candle.fragranceNotes.base.join(", ")}</p>
+                      </div>
+                    </div>
+
+                    {/* Desktop layout (single box) */}
+                    <div className="hidden lg:block border border-border/20 bg-secondary/20">
+                      <div className="grid grid-cols-3">
+                        <div className="p-5 text-center">
+                          <p className="text-[10px] uppercase tracking-[0.15em] text-primary/80 mb-2">Top</p>
+                          <p className="text-sm text-foreground leading-snug">{candle.fragranceNotes.top.join(", ")}</p>
+                        </div>
+                        <div className="p-5 text-center border-l border-border/20">
+                          <p className="text-[10px] uppercase tracking-[0.15em] text-primary/80 mb-2">Heart</p>
+                          <p className="text-sm text-foreground leading-snug">{candle.fragranceNotes.heart.join(", ")}</p>
+                        </div>
+                        <div className="p-5 text-center border-l border-border/20">
+                          <p className="text-[10px] uppercase tracking-[0.15em] text-primary/80 mb-2">Base</p>
+                          <p className="text-sm text-foreground leading-snug">{candle.fragranceNotes.base.join(", ")}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Product Details Grid */}
