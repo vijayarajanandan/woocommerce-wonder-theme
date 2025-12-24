@@ -1,6 +1,6 @@
 import { useParams, Link } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { ChevronLeft, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,17 @@ const CandleDetail = () => {
   const { addItem: addToRecentlyViewed } = useRecentlyViewed();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const alsoLikeScrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (alsoLikeScrollRef.current) {
+      const scrollAmount = 280;
+      alsoLikeScrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const relatedCandles = getFeaturedCandles().filter(c => c.slug !== slug).slice(0, 3);
 
@@ -125,105 +136,83 @@ const CandleDetail = () => {
               <p className="text-[10px] uppercase tracking-[0.4em] text-primary mb-3 font-medium">
                 {candle.collection}
               </p>
-              <h1 className="font-display text-4xl md:text-5xl text-foreground mb-3">
+              <h1 className="font-display text-3xl md:text-4xl lg:text-5xl text-foreground mb-3">
                 {candle.name}
               </h1>
-              <p className="text-lg text-muted-foreground italic mb-8">
+              <p className="text-base lg:text-lg text-muted-foreground italic mb-6 lg:mb-8">
                 {candle.tagline}
               </p>
 
-              {/* Price */}
-              <div className="flex items-baseline gap-4 mb-8 pb-8 border-b border-border/30">
-                <span className="font-display text-4xl text-foreground">{formatPrice(candle.price)}</span>
-                {candle.regularPrice && (
-                  <span className="text-xl text-muted-foreground line-through">{formatPrice(candle.regularPrice)}</span>
-                )}
-              </div>
-
-              {/* Description */}
-              <p className="text-muted-foreground leading-relaxed mb-8">
-                {candle.description}
-              </p>
-
-              {/* Fragrance Notes */}
-              <div className="mb-8 p-6 bg-secondary/20 border border-border/30">
-                <h3 className="font-display text-lg text-foreground mb-5">Fragrance Notes</h3>
-                <div className="space-y-4 text-sm">
-                  <div className="flex items-start">
-                    <span className="w-20 text-muted-foreground uppercase tracking-[0.15em] text-[10px] pt-0.5">Top</span>
-                    <span className="text-foreground flex-1">{candle.fragranceNotes.top.join(" · ")}</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-20 text-muted-foreground uppercase tracking-[0.15em] text-[10px] pt-0.5">Heart</span>
-                    <span className="text-foreground flex-1">{candle.fragranceNotes.heart.join(" · ")}</span>
-                  </div>
-                  <div className="flex items-start">
-                    <span className="w-20 text-muted-foreground uppercase tracking-[0.15em] text-[10px] pt-0.5">Base</span>
-                    <span className="text-foreground flex-1">{candle.fragranceNotes.base.join(" · ")}</span>
-                  </div>
+              {/* Product Details - Moved above price on mobile for better conversion */}
+              <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-6">
+                <div className="p-3 lg:p-4 border border-border/30 text-center">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-1 lg:mb-2">Size</p>
+                  <p className="text-foreground font-medium text-sm lg:text-base">{candle.weight}</p>
                 </div>
-              </div>
-
-              {/* Product Details */}
-              <div className="grid grid-cols-3 gap-3 mb-8">
-                <div className="p-4 border border-border/30 text-center">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-2">Size</p>
-                  <p className="text-foreground font-medium">{candle.weight}</p>
+                <div className="p-3 lg:p-4 border border-border/30 text-center">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-1 lg:mb-2">Burn Time</p>
+                  <p className="text-foreground font-medium text-sm lg:text-base">{candle.burnTime}</p>
                 </div>
-                <div className="p-4 border border-border/30 text-center">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-2">Burn Time</p>
-                  <p className="text-foreground font-medium">{candle.burnTime}</p>
-                </div>
-                <div className="p-4 border border-border/30 text-center">
-                  <Flame className="h-5 w-5 mx-auto text-primary mb-2" />
+                <div className="p-3 lg:p-4 border border-border/30 text-center">
+                  <Flame className="h-4 w-4 lg:h-5 lg:w-5 mx-auto text-primary mb-1 lg:mb-2" />
                   <p className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Natural Soy</p>
                 </div>
               </div>
 
-              {/* Quantity & Add to Cart */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 mb-6">
-                <div className="flex items-center border border-border/50">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="h-12 w-12 hover:text-primary"
+              {/* Price */}
+              <div className="flex items-baseline gap-3 lg:gap-4 mb-4 lg:mb-6">
+                <span className="font-display text-3xl lg:text-4xl text-foreground">{formatPrice(candle.price)}</span>
+                {candle.regularPrice && (
+                  <span className="text-lg lg:text-xl text-muted-foreground line-through">{formatPrice(candle.regularPrice)}</span>
+                )}
+              </div>
+
+              {/* Quantity & Add to Cart - Stacked on mobile for better UX */}
+              <div className="flex flex-col gap-3 mb-4 lg:mb-6">
+                <div className="flex items-center gap-3 lg:gap-4">
+                  <div className="flex items-center border border-border/50">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="h-11 w-11 lg:h-12 lg:w-12 hover:text-primary"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-10 lg:w-12 text-center font-medium">{quantity}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setQuantity((q) => q + 1)}
+                      className="h-11 w-11 lg:h-12 lg:w-12 hover:text-primary"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => toggleWishlist(candle)}
+                    className={cn(
+                      "px-4 h-11 lg:h-12",
+                      isInWishlist(candle.id) && "text-primary border-primary/50 hover:text-primary"
+                    )}
                   >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <span className="w-12 text-center font-medium">{quantity}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="h-12 w-12 hover:text-primary"
-                  >
-                    <Plus className="h-4 w-4" />
+                    <Heart className={cn("h-5 w-5", isInWishlist(candle.id) && "fill-current")} />
                   </Button>
                 </div>
                 <Button
                   size="lg"
-                  className="flex-1"
+                  className="w-full h-12 lg:h-14 text-base"
                   onClick={handleAddToCart}
                   disabled={candle.stockStatus === 'outofstock'}
                 >
                   {candle.stockStatus === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => toggleWishlist(candle)}
-                  className={cn(
-                    "px-4",
-                    isInWishlist(candle.id) && "text-primary border-primary/50 hover:text-primary"
-                  )}
-                >
-                  <Heart className={cn("h-5 w-5", isInWishlist(candle.id) && "fill-current")} />
-                </Button>
               </div>
 
               {/* Trust Badges */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-border/30">
+              <div className="flex flex-wrap gap-4 py-4 lg:py-6 border-y border-border/30 mb-6 lg:mb-8">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Truck className="h-4 w-4" />
                   <span className="text-[10px] uppercase tracking-wider">Free Ship ₹2000+</span>
@@ -237,6 +226,30 @@ const CandleDetail = () => {
                   <span className="text-[10px] uppercase tracking-wider">Secure Checkout</span>
                 </div>
               </div>
+
+              {/* Description */}
+              <p className="text-muted-foreground leading-relaxed mb-6 lg:mb-8 text-sm lg:text-base">
+                {candle.description}
+              </p>
+
+              {/* Fragrance Notes */}
+              <div className="p-4 lg:p-6 bg-secondary/20 border border-border/30">
+                <h3 className="font-display text-base lg:text-lg text-foreground mb-4 lg:mb-5">Fragrance Notes</h3>
+                <div className="space-y-3 lg:space-y-4 text-sm">
+                  <div className="flex items-start">
+                    <span className="w-16 lg:w-20 text-muted-foreground uppercase tracking-[0.15em] text-[10px] pt-0.5">Top</span>
+                    <span className="text-foreground flex-1">{candle.fragranceNotes.top.join(" · ")}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="w-16 lg:w-20 text-muted-foreground uppercase tracking-[0.15em] text-[10px] pt-0.5">Heart</span>
+                    <span className="text-foreground flex-1">{candle.fragranceNotes.heart.join(" · ")}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <span className="w-16 lg:w-20 text-muted-foreground uppercase tracking-[0.15em] text-[10px] pt-0.5">Base</span>
+                    <span className="text-foreground flex-1">{candle.fragranceNotes.base.join(" · ")}</span>
+                  </div>
+                </div>
+              </div>
             </div>
             </ScrollReveal>
           </div>
@@ -244,23 +257,50 @@ const CandleDetail = () => {
 
         {/* Related Products */}
         {relatedCandles.length > 0 && (
-          <section className="py-24 border-t border-border/30 bg-secondary/10">
+          <section className="py-16 lg:py-24 border-t border-border/30 bg-secondary/10">
             <div className="container mx-auto px-6 lg:px-12">
-              <div className="text-center mb-16">
-                <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
-                  Discover More
-                </p>
-                <h2 className="font-display text-3xl md:text-4xl text-foreground">
-                  You May Also Like
-                </h2>
+              <div className="flex items-center justify-between mb-12 lg:mb-16">
+                <div className="text-center lg:text-left flex-1">
+                  <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
+                    Discover More
+                  </p>
+                  <h2 className="font-display text-2xl md:text-3xl lg:text-4xl text-foreground">
+                    You May Also Like
+                  </h2>
+                </div>
+                <div className="flex gap-2 lg:hidden">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => scroll('left')}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={() => scroll('right')}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10 max-w-5xl mx-auto">
+              {/* Mobile: Scrollable, Desktop: Grid */}
+              <div 
+                ref={alsoLikeScrollRef}
+                className="flex lg:grid lg:grid-cols-3 gap-4 lg:gap-8 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 snap-x snap-mandatory lg:snap-none max-w-5xl lg:mx-auto"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {relatedCandles.map((c, index) => (
-                  <CandleCard key={c.id} candle={c} index={index} />
+                  <div key={c.id} className="flex-shrink-0 w-[260px] lg:w-full snap-start">
+                    <CandleCard candle={c} index={index} />
+                  </div>
                 ))}
               </div>
-              </div>
-            </section>
+            </div>
+          </section>
         )}
 
         {/* Reviews Section */}

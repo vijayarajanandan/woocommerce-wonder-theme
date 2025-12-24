@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ShoppingBag, Menu, X, Search, User, Heart } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,22 @@ const navigation = [
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { toggleCart, itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 41);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <>
       <AnnouncementBar />
-      <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/30 mt-[41px]">
+      <header className={`fixed left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/30 transition-all duration-300 ${isScrolled ? 'top-0' : 'top-[41px]'}`}>
         <nav className="container mx-auto px-6 lg:px-12">
           <div className="flex h-24 items-center justify-between">
             {/* Left - Navigation (Desktop) / Menu Button (Mobile) */}

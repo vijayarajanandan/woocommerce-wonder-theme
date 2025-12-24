@@ -53,9 +53,9 @@ const Collections = () => {
                 <img
                   src={collectionImages[collections[0].slug] || collections[0].image}
                   alt={collections[0].name}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-90"
                 />
-                <div className="absolute inset-0 bg-background/70" />
+                <div className="absolute inset-0 bg-background/50" />
                 <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-background/30" />
                 <div className="absolute inset-0 flex items-center">
                   <div className="p-8 md:p-12 max-w-xl">
@@ -92,10 +92,10 @@ const Collections = () => {
                   <img
                     src={collectionImages[collection.slug] || collection.image}
                     alt={collection.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-90"
                   />
-                  <div className="absolute inset-0 bg-background/60" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-background/20" />
+                  <div className="absolute inset-0 bg-background/40" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">
                     <p className="text-[9px] uppercase tracking-[0.3em] text-primary mb-2">
                       {getProductCount(collection.name)} Products
