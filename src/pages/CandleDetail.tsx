@@ -15,6 +15,7 @@ import { ImageZoom } from "@/components/ui/image-zoom";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { RecentlyViewed } from "@/components/candle/RecentlyViewed";
+import { FloatingProductCTA } from "@/components/candle/FloatingProductCTA";
 
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -25,6 +26,7 @@ const CandleDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const alsoLikeScrollRef = useRef<HTMLDivElement>(null);
+  const addToCartRef = useRef<HTMLButtonElement>(null);
 
   const scroll = (direction: 'left' | 'right') => {
     if (alsoLikeScrollRef.current) {
@@ -143,18 +145,18 @@ const CandleDetail = () => {
                 {candle.tagline}
               </p>
 
-              {/* Product Details - Moved above price on mobile for better conversion */}
-              <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-6">
-                <div className="p-3 lg:p-4 border border-border/30 text-center">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-1 lg:mb-2">Size</p>
-                  <p className="text-foreground font-medium text-sm lg:text-base">{candle.weight}</p>
+              {/* Product Details - Show on mobile above price */}
+              <div className="lg:hidden grid grid-cols-3 gap-2 mb-6">
+                <div className="p-3 border border-border/30 text-center">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Size</p>
+                  <p className="text-foreground font-medium text-sm">{candle.weight}</p>
                 </div>
-                <div className="p-3 lg:p-4 border border-border/30 text-center">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-1 lg:mb-2">Burn Time</p>
-                  <p className="text-foreground font-medium text-sm lg:text-base">{candle.burnTime}</p>
+                <div className="p-3 border border-border/30 text-center">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-1">Burn Time</p>
+                  <p className="text-foreground font-medium text-sm">{candle.burnTime}</p>
                 </div>
-                <div className="p-3 lg:p-4 border border-border/30 text-center">
-                  <Flame className="h-4 w-4 lg:h-5 lg:w-5 mx-auto text-primary mb-1 lg:mb-2" />
+                <div className="p-3 border border-border/30 text-center">
+                  <Flame className="h-4 w-4 mx-auto text-primary mb-1" />
                   <p className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Natural Soy</p>
                 </div>
               </div>
@@ -167,24 +169,24 @@ const CandleDetail = () => {
                 )}
               </div>
 
-              {/* Quantity & Add to Cart - Stacked on mobile for better UX */}
-              <div className="flex flex-col gap-3 mb-4 lg:mb-6">
-                <div className="flex items-center gap-3 lg:gap-4">
+              {/* Mobile: Quantity & Add to Cart below price */}
+              <div className="lg:hidden flex flex-col gap-3 mb-6">
+                <div className="flex items-center gap-3">
                   <div className="flex items-center border border-border/50">
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      className="h-11 w-11 lg:h-12 lg:w-12 hover:text-primary"
+                      className="h-11 w-11 hover:text-primary"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
-                    <span className="w-10 lg:w-12 text-center font-medium">{quantity}</span>
+                    <span className="w-10 text-center font-medium">{quantity}</span>
                     <Button 
                       variant="ghost" 
                       size="icon" 
                       onClick={() => setQuantity((q) => q + 1)}
-                      className="h-11 w-11 lg:h-12 lg:w-12 hover:text-primary"
+                      className="h-11 w-11 hover:text-primary"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -194,16 +196,18 @@ const CandleDetail = () => {
                     size="lg"
                     onClick={() => toggleWishlist(candle)}
                     className={cn(
-                      "px-4 h-11 lg:h-12",
+                      "px-4 h-11 flex-1",
                       isInWishlist(candle.id) && "text-primary border-primary/50 hover:text-primary"
                     )}
                   >
-                    <Heart className={cn("h-5 w-5", isInWishlist(candle.id) && "fill-current")} />
+                    <Heart className={cn("h-5 w-5 mr-2", isInWishlist(candle.id) && "fill-current")} />
+                    Wishlist
                   </Button>
                 </div>
                 <Button
+                  ref={addToCartRef}
                   size="lg"
-                  className="w-full h-12 lg:h-14 text-base"
+                  className="w-full h-12 text-base"
                   onClick={handleAddToCart}
                   disabled={candle.stockStatus === 'outofstock'}
                 >
@@ -211,8 +215,8 @@ const CandleDetail = () => {
                 </Button>
               </div>
 
-              {/* Trust Badges */}
-              <div className="flex flex-wrap gap-4 py-4 lg:py-6 border-y border-border/30 mb-6 lg:mb-8">
+              {/* Mobile: Trust Badges */}
+              <div className="lg:hidden flex flex-wrap gap-4 py-4 border-y border-border/30 mb-6">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Truck className="h-4 w-4" />
                   <span className="text-[10px] uppercase tracking-wider">Free Ship ₹2000+</span>
@@ -233,7 +237,7 @@ const CandleDetail = () => {
               </p>
 
               {/* Fragrance Notes */}
-              <div className="p-4 lg:p-6 bg-secondary/20 border border-border/30">
+              <div className="p-4 lg:p-6 bg-secondary/20 border border-border/30 mb-8">
                 <h3 className="font-display text-base lg:text-lg text-foreground mb-4 lg:mb-5">Fragrance Notes</h3>
                 <div className="space-y-3 lg:space-y-4 text-sm">
                   <div className="flex items-start">
@@ -248,6 +252,84 @@ const CandleDetail = () => {
                     <span className="w-16 lg:w-20 text-muted-foreground uppercase tracking-[0.15em] text-[10px] pt-0.5">Base</span>
                     <span className="text-foreground flex-1">{candle.fragranceNotes.base.join(" · ")}</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Desktop: Product Details after fragrance notes */}
+              <div className="hidden lg:grid grid-cols-3 gap-3 mb-8">
+                <div className="p-4 border border-border/30 text-center">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-2">Size</p>
+                  <p className="text-foreground font-medium">{candle.weight}</p>
+                </div>
+                <div className="p-4 border border-border/30 text-center">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-2">Burn Time</p>
+                  <p className="text-foreground font-medium">{candle.burnTime}</p>
+                </div>
+                <div className="p-4 border border-border/30 text-center">
+                  <Flame className="h-5 w-5 mx-auto text-primary mb-2" />
+                  <p className="text-[9px] uppercase tracking-[0.1em] text-muted-foreground">Natural Soy</p>
+                </div>
+              </div>
+
+              {/* Desktop: Quantity & Add to Cart */}
+              <div className="hidden lg:flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center border border-border/50">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="h-12 w-12 hover:text-primary"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <span className="w-12 text-center font-medium">{quantity}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => setQuantity((q) => q + 1)}
+                      className="h-12 w-12 hover:text-primary"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => toggleWishlist(candle)}
+                    className={cn(
+                      "px-6 h-12",
+                      isInWishlist(candle.id) && "text-primary border-primary/50 hover:text-primary"
+                    )}
+                  >
+                    <Heart className={cn("h-5 w-5 mr-2", isInWishlist(candle.id) && "fill-current")} />
+                    Wishlist
+                  </Button>
+                </div>
+                <Button
+                  ref={addToCartRef}
+                  size="lg"
+                  className="w-full h-14 text-base"
+                  onClick={handleAddToCart}
+                  disabled={candle.stockStatus === 'outofstock'}
+                >
+                  {candle.stockStatus === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
+                </Button>
+              </div>
+
+              {/* Desktop: Trust Badges */}
+              <div className="hidden lg:flex flex-wrap gap-4 py-6 border-y border-border/30 mt-6">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Truck className="h-4 w-4" />
+                  <span className="text-[10px] uppercase tracking-wider">Free Ship ₹2000+</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <RotateCcw className="h-4 w-4" />
+                  <span className="text-[10px] uppercase tracking-wider">Easy Returns</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Shield className="h-4 w-4" />
+                  <span className="text-[10px] uppercase tracking-wider">Secure Checkout</span>
                 </div>
               </div>
             </div>
@@ -309,6 +391,10 @@ const CandleDetail = () => {
         {/* Recently Viewed */}
         <RecentlyViewed excludeId={candle.id} />
       </main>
+      
+      {/* Floating CTA */}
+      <FloatingProductCTA candle={candle} triggerRef={addToCartRef} />
+      
       <Footer />
     </div>
   );

@@ -262,7 +262,7 @@ export const ProductFilters = (props: ProductFiltersProps) => {
             <SheetHeader>
               <SheetTitle className="text-left">Filters</SheetTitle>
             </SheetHeader>
-            <div className="mt-6 flex-1 overflow-y-auto">
+            <div className="mt-6 flex-1 overflow-y-auto pr-4">
               <FilterContent {...props} />
             </div>
           </SheetContent>
