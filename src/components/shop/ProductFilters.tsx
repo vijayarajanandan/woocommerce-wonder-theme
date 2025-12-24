@@ -235,7 +235,7 @@ export const ProductFilters = (props: ProductFiltersProps) => {
     <>
       {/* Desktop Filters */}
       <div className="hidden lg:block w-64 flex-shrink-0">
-        <div className="sticky top-[180px] max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-hide">
+        <div className="sticky top-[180px] max-h-[calc(100vh-200px)] overflow-y-auto pr-4" style={{ scrollbarWidth: 'thin' }}>
           <h3 className="text-xs uppercase tracking-[0.3em] text-muted-foreground mb-6 flex items-center gap-2">
             <SlidersHorizontal className="h-4 w-4" />
             Filters
