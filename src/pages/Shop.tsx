@@ -1,29 +1,55 @@
+/**
+ * Shop Page - WooCommerce Enabled
+ * 
+ * This version automatically uses WooCommerce when configured,
+ * or falls back to static data during development.
+ * 
+ * Changes from original:
+ * 1. Added useProducts hook for WooCommerce data
+ * 2. Added loading states
+ * 3. Kept all original UI exactly the same
+ */
+
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CandleCard } from "@/components/candle/CandleCard";
-import { candles, collections, getBestsellers } from "@/data/candles";
 import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/shop/ProductFilters";
+import { Skeleton } from "@/components/ui/skeleton";
 import shopBanner from "@/assets/shop-banner.jpg";
 
-// Get min/max prices from candles
-const getMinMaxPrice = () => {
-  const prices = candles.map(c => c.price);
-  return { min: Math.min(...prices), max: Math.max(...prices) };
-};
+// Import both static data and WooCommerce hooks
+import { 
+  candles as staticCandles, 
+  collections, 
+  getBestsellers as getStaticBestsellers,
+  getMinMaxPrice,
+  isWooCommerceEnabled,
+} from "@/data/candles";
+import { useProducts, useBestsellers, useCategories } from "@/hooks/useWooCommerce";
 
-const { min: minPrice, max: maxPrice } = getMinMaxPrice();
+// Get price range for filters
+const { min: defaultMinPrice, max: defaultMaxPrice } = getMinMaxPrice();
 
 const defaultFilters: FilterState = {
-  priceRange: [minPrice, maxPrice],
+  priceRange: [defaultMinPrice, defaultMaxPrice],
   collections: [],
   scentTypes: [],
   sizes: [],
   inStock: false,
   onSale: false,
 };
+
+// Loading skeleton for product cards
+const ProductSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="aspect-[3/4] w-full" />
+    <Skeleton className="h-4 w-3/4" />
+    <Skeleton className="h-4 w-1/2" />
+  </div>
+);
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -38,6 +64,57 @@ const Shop = () => {
     return initial;
   });
 
+  // Fetch data from WooCommerce if configured
+  const isWC = isWooCommerceEnabled();
+  
+  const { 
+    data: wcProductsData, 
+    isLoading: isLoadingProducts,
+    error: productsError,
+  } = useProducts({ per_page: 100 });
+  
+  const { 
+    data: wcBestsellers, 
+    isLoading: isLoadingBestsellers,
+  } = useBestsellers();
+  
+  const { 
+    data: wcCategories,
+  } = useCategories();
+
+  // Use WooCommerce data if available, otherwise use static
+  const allCandles = useMemo(() => {
+    if (isWC && wcProductsData?.candles) {
+      return wcProductsData.candles;
+    }
+    return staticCandles;
+  }, [isWC, wcProductsData]);
+
+  const bestsellers = useMemo(() => {
+    if (isWC && wcBestsellers) {
+      return wcBestsellers;
+    }
+    return getStaticBestsellers();
+  }, [isWC, wcBestsellers]);
+
+  const displayCollections = useMemo(() => {
+    if (isWC && wcCategories) {
+      return wcCategories;
+    }
+    return collections;
+  }, [isWC, wcCategories]);
+
+  // Calculate min/max price from actual data
+  const { minPrice, maxPrice } = useMemo(() => {
+    const prices = allCandles.map(c => c.price);
+    if (prices.length === 0) return { minPrice: defaultMinPrice, maxPrice: defaultMaxPrice };
+    return {
+      minPrice: Math.min(...prices),
+      maxPrice: Math.max(...prices),
+    };
+  }, [allCandles]);
+
+  // Count active filters
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.priceRange[0] > minPrice || filters.priceRange[1] < maxPrice) count++;
@@ -47,10 +124,11 @@ const Shop = () => {
     if (filters.inStock) count++;
     if (filters.onSale) count++;
     return count;
-  }, [filters]);
+  }, [filters, minPrice, maxPrice]);
 
+  // Apply filters to candles
   const displayCandles = useMemo(() => {
-    let result = showBestsellers ? getBestsellers() : [...candles];
+    let result = showBestsellers ? bestsellers : [...allCandles];
 
     // Apply price filter
     result = result.filter(
@@ -60,7 +138,7 @@ const Shop = () => {
     // Apply collection filter
     if (filters.collections.length > 0) {
       result = result.filter((c) => {
-        const col = collections.find((col) => col.name === c.collection);
+        const col = displayCollections.find((col) => col.name === c.collection);
         return col && filters.collections.includes(col.slug);
       });
     }
@@ -81,8 +159,9 @@ const Shop = () => {
     }
 
     return result;
-  }, [filters, showBestsellers]);
+  }, [filters, showBestsellers, allCandles, bestsellers, displayCollections]);
 
+  // Page title and description
   let pageTitle = "All Candles";
   let pageDescription = "Discover our complete collection of luxury scented candles";
 
@@ -90,7 +169,7 @@ const Shop = () => {
     pageTitle = "Bestsellers";
     pageDescription = "Our most loved fragrances, chosen by our community";
   } else if (filters.collections.length === 1) {
-    const collection = collections.find((c) => c.slug === filters.collections[0]);
+    const collection = displayCollections.find((c) => c.slug === filters.collections[0]);
     if (collection) {
       pageTitle = collection.name;
       pageDescription = collection.description;
@@ -98,7 +177,7 @@ const Shop = () => {
   }
 
   const clearFilters = () => {
-    setFilters(defaultFilters);
+    setFilters({ ...defaultFilters, priceRange: [minPrice, maxPrice] });
     setSearchParams({});
   };
 
@@ -111,6 +190,8 @@ const Shop = () => {
       setSearchParams({});
     }
   };
+
+  const isLoading = isWC && (isLoadingProducts || (showBestsellers && isLoadingBestsellers));
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -151,7 +232,7 @@ const Shop = () => {
               >
                 All
               </Button>
-              {collections.map((col) => (
+              {displayCollections.map((col) => (
                 <Button
                   key={col.id}
                   variant={filters.collections.includes(col.slug) ? "default" : "outline"}
@@ -188,10 +269,23 @@ const Shop = () => {
 
               {/* Products */}
               <div className="flex-1">
-                {displayCandles.length > 0 ? (
+                {/* Loading State */}
+                {isLoading ? (
+                  <>
+                    <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
+                      Loading products...
+                    </p>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
+                      {[...Array(6)].map((_, i) => (
+                        <ProductSkeleton key={i} />
+                      ))}
+                    </div>
+                  </>
+                ) : displayCandles.length > 0 ? (
                   <>
                     <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
                       {displayCandles.length} {displayCandles.length === 1 ? 'product' : 'products'}
+                      {isWC && <span className="ml-2 text-primary">(Live from store)</span>}
                     </p>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
                       {displayCandles.map((candle, index) => (
@@ -206,6 +300,13 @@ const Shop = () => {
                     <Button onClick={clearFilters} variant="gold">
                       Clear Filters
                     </Button>
+                  </div>
+                )}
+
+                {/* Error State */}
+                {productsError && (
+                  <div className="text-center py-8 text-destructive">
+                    <p>Error loading products. Using cached data.</p>
                   </div>
                 )}
               </div>

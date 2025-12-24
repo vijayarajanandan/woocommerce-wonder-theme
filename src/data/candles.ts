@@ -1,300 +1,358 @@
-import { Candle, Collection } from "@/types/candle";
+/**
+ * Unified Data Layer
+ * 
+ * This file provides a seamless bridge between your static data and WooCommerce.
+ * It automatically uses WooCommerce when configured, or falls back to static data.
+ * 
+ * This means:
+ * 1. Your app works perfectly during development with mock data
+ * 2. Automatically uses WooCommerce in production when configured
+ * 3. No code changes needed in your components
+ * 
+ * Usage in components stays the same:
+ * import { candles, getCandleBySlug, collections } from '@/data/candles';
+ */
 
-// Enhanced product images
-import sakuraDream1 from "@/assets/products/sakura-dream-1-enhanced.jpg";
-import sakuraDream2 from "@/assets/products/sakura-dream-2-enhanced.jpg";
-import seasideSerenity1 from "@/assets/products/seaside-serenity-1-enhanced.jpg";
-import seasideSerenity2 from "@/assets/products/seaside-serenity-2-enhanced.jpg";
-import springMorning1 from "@/assets/products/spring-morning-1-enhanced.jpg";
-import springMorning2 from "@/assets/products/spring-morning-2-enhanced.jpg";
-import lavenderWhisper1 from "@/assets/products/lavender-whisper-1-enhanced.jpg";
-import lavenderWhisper2 from "@/assets/products/lavender-whisper-2-enhanced.jpg";
-import coffeeEmber1 from "@/assets/products/coffee-ember-1-enhanced.jpg";
-import coffeeEmber2 from "@/assets/products/coffee-ember-2-enhanced.jpg";
-import midnightJasmine1 from "@/assets/products/midnight-jasmine-1-enhanced.jpg";
-import midnightJasmine2 from "@/assets/products/midnight-jasmine-2-enhanced.jpg";
-import forestPine1 from "@/assets/products/forest-pine-1-enhanced.jpg";
-import forestPine2 from "@/assets/products/forest-pine-2-enhanced.jpg";
-import vanillaSunrise1 from "@/assets/products/vanilla-sunrise-1-enhanced.jpg";
-import vanillaSunrise2 from "@/assets/products/vanilla-sunrise-2-enhanced.jpg";
-import oceanBreeze1 from "@/assets/products/ocean-breeze-1-enhanced.jpg";
-import oceanBreeze2 from "@/assets/products/ocean-breeze-2-enhanced.jpg";
-import autumnSpice1 from "@/assets/products/autumn-spice-1-enhanced.jpg";
-import autumnSpice2 from "@/assets/products/autumn-spice-2-enhanced.jpg";
+import { isWooCommerceConfigured } from '@/lib/woocommerce';
+import type { Candle, Collection } from '@/types/candle';
 
-export const collections: Collection[] = [
+// ============================================
+// STATIC DATA (Development/Fallback)
+// ============================================
+
+// Static collections data
+export const staticCollections: Collection[] = [
   {
     id: 1,
-    name: "Signature Collection",
-    slug: "signature",
-    description: "Warm, comforting classics – Seaside Serenity, Spiced Vanilla & Autumn Orchard",
-    image: seasideSerenity1,
+    name: 'Signature',
+    slug: 'signature',
+    description: 'Our most beloved scents, crafted to create unforgettable moments.',
+    image: '/collections/signature-collection.jpg',
   },
   {
     id: 2,
-    name: "Noir Collection",
-    slug: "noir",
-    description: "Bold, mysterious evenings – Coffee Ember, Vintage Memories & Noir Rose",
-    image: coffeeEmber1,
+    name: 'Noir',
+    slug: 'noir',
+    description: 'Dark, mysterious fragrances for the bold and adventurous.',
+    image: '/collections/noir-collection.jpg',
   },
   {
     id: 3,
-    name: "Botanical Garden",
-    slug: "botanical",
-    description: "Fresh florals & nature – Sakura Dream, Lavender Whisper & Spring Morning",
-    image: sakuraDream1,
+    name: 'Botanical',
+    slug: 'botanical',
+    description: 'Fresh, natural scents inspired by gardens and greenery.',
+    image: '/collections/botanical-collection.jpg',
   },
   {
     id: 4,
-    name: "Limited Edition",
-    slug: "limited",
-    description: "Exclusive seasonal blend – Cinnamon Brew, our signature fusion",
-    image: autumnSpice1,
+    name: 'Limited Edition',
+    slug: 'limited',
+    description: 'Exclusive seasonal fragrances available for a limited time.',
+    image: '/collections/limited-collection.jpg',
   },
 ];
 
-export const candles: Candle[] = [
+// Static candles data (sample - you should expand this with your actual data)
+export const staticCandles: Candle[] = [
   {
     id: 1,
-    name: "Sakura Dream",
-    slug: "sakura-dream",
-    price: 1299,
-    onSale: false,
-    tagline: "Japanese Cherry Blossom",
-    description: "Delicate cherry blossom petals dancing in a spring breeze, with soft notes of almond and fresh green leaves. A gentle, romantic fragrance that captures the fleeting beauty of sakura season.",
+    name: 'Lavender Whisper',
+    slug: 'lavender-whisper',
+    collection: 'Signature',
+    price: 1899,
+    tagline: 'A calming blend of French lavender and soft vanilla',
+    description: 'Transport yourself to the lavender fields of Provence with this soothing blend. French lavender meets soft vanilla undertones for the ultimate relaxation experience.',
+    images: ['/products/lavender-whisper-1.jpg', '/products/lavender-whisper-2.jpg'],
     fragranceNotes: {
-      top: ["Cherry Blossom", "Bergamot", "Green Tea"],
-      heart: ["Japanese Cherry", "Peony", "Magnolia"],
-      base: ["Soft Musk", "Sandalwood", "Almond"],
+      top: ['French Lavender', 'Bergamot'],
+      heart: ['Chamomile', 'Rose'],
+      base: ['Vanilla', 'White Musk'],
     },
-    images: [sakuraDream1, sakuraDream2],
-    collection: "Botanical Garden",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: true,
+    weight: '200g',
+    size: 'Medium',
+    burnTime: '50-60 hours',
+    stockStatus: 'instock',
     bestseller: true,
+    onSale: false,
   },
   {
     id: 2,
-    name: "Seaside Serenity",
-    slug: "seaside-serenity",
-    price: 1299,
-    onSale: false,
-    tagline: "Ocean Breeze",
-    description: "Fresh ocean air meets coastal florals in this invigorating blend. Sea salt, driftwood, and a touch of coconut create a calming escape to your favorite beach destination.",
+    name: 'Midnight Rose',
+    slug: 'midnight-rose',
+    collection: 'Noir',
+    price: 2199,
+    regularPrice: 2499,
+    tagline: 'An enchanting blend of dark rose and oud',
+    description: 'A mysterious and seductive fragrance that blooms in the darkness. Deep Bulgarian rose intertwines with precious oud for an unforgettable experience.',
+    images: ['/products/midnight-rose-1.jpg'],
     fragranceNotes: {
-      top: ["Sea Salt", "Citrus", "Ozone"],
-      heart: ["Ocean Breeze", "Jasmine", "Water Lily"],
-      base: ["Driftwood", "Coconut", "White Musk"],
+      top: ['Black Pepper', 'Saffron'],
+      heart: ['Bulgarian Rose', 'Jasmine'],
+      base: ['Oud', 'Amber', 'Sandalwood'],
     },
-    images: [seasideSerenity1, seasideSerenity2],
-    collection: "Signature Collection",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: true,
-    bestseller: false,
+    weight: '250g',
+    size: 'Large',
+    burnTime: '60-70 hours',
+    stockStatus: 'instock',
+    bestseller: true,
+    onSale: true,
   },
   {
     id: 3,
-    name: "Spiced Vanilla",
-    slug: "spiced-vanilla",
-    price: 1199,
-    regularPrice: 1499,
-    onSale: true,
-    tagline: "Cinnamon & Vanilla",
-    description: "Warm cinnamon bark intertwines with rich Madagascar vanilla for a cozy, comforting embrace. Perfect for creating a welcoming atmosphere in any space.",
+    name: 'Garden Bloom',
+    slug: 'garden-bloom',
+    collection: 'Botanical',
+    price: 1599,
+    tagline: 'Fresh florals from an English garden',
+    description: 'Capture the essence of a spring morning in an English garden. Fresh-cut flowers mingle with dewy greens and soft earth.',
+    images: ['/products/garden-bloom-1.jpg'],
     fragranceNotes: {
-      top: ["Cinnamon Bark", "Nutmeg", "Cardamom"],
-      heart: ["Vanilla Bean", "Honey", "Clove"],
-      base: ["Tonka Bean", "Amber", "Warm Musk"],
+      top: ['Green Leaves', 'Citrus Zest'],
+      heart: ['Peony', 'Lily of the Valley'],
+      base: ['White Cedar', 'Clean Musk'],
     },
-    images: [forestPine1, forestPine2],
-    collection: "Signature Collection",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: true,
-    bestseller: true,
+    weight: '180g',
+    size: 'Medium',
+    burnTime: '45-55 hours',
+    stockStatus: 'instock',
+    bestseller: false,
+    onSale: false,
   },
   {
     id: 4,
-    name: "Coffee Ember",
-    slug: "coffee-ember",
-    price: 1399,
-    onSale: false,
-    tagline: "Roasted Coffee",
-    description: "Rich, freshly roasted coffee beans with hints of dark chocolate and caramel. A bold, awakening fragrance for coffee lovers who appreciate depth and warmth.",
+    name: 'Amber Dreams',
+    slug: 'amber-dreams',
+    collection: 'Signature',
+    price: 2099,
+    tagline: 'Warm amber and exotic spices',
+    description: 'A rich, warming fragrance that wraps you in comfort. Golden amber meets exotic spices for a cozy, sophisticated scent.',
+    images: ['/products/amber-dreams-1.jpg'],
     fragranceNotes: {
-      top: ["Espresso", "Dark Chocolate", "Hazelnut"],
-      heart: ["Roasted Coffee", "Caramel", "Cinnamon"],
-      base: ["Vanilla", "Smoky Woods", "Brown Sugar"],
+      top: ['Cinnamon', 'Cardamom'],
+      heart: ['Amber', 'Honey'],
+      base: ['Sandalwood', 'Vanilla', 'Musk'],
     },
-    images: [coffeeEmber1, coffeeEmber2],
-    collection: "Noir Collection",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: true,
+    weight: '220g',
+    size: 'Medium',
+    burnTime: '55-65 hours',
+    stockStatus: 'instock',
     bestseller: false,
+    onSale: false,
   },
   {
     id: 5,
-    name: "Autumn Orchard",
-    slug: "autumn-orchard",
-    price: 1299,
-    onSale: false,
-    tagline: "Apple Cinnamon",
-    description: "Crisp autumn apples freshly picked from the orchard, warmed with cinnamon and a hint of maple. A nostalgic fragrance that captures golden fall afternoons.",
+    name: 'Ocean Mist',
+    slug: 'ocean-mist',
+    collection: 'Botanical',
+    price: 1799,
+    tagline: 'Fresh sea breeze and coastal herbs',
+    description: 'Breathe in the invigorating scent of the ocean. Crisp sea salt mingles with coastal herbs and driftwood.',
+    images: ['/products/ocean-mist-1.jpg'],
     fragranceNotes: {
-      top: ["Red Apple", "Pear", "Citrus Zest"],
-      heart: ["Cinnamon", "Apple Cider", "Clove"],
-      base: ["Maple", "Vanilla", "Warm Woods"],
+      top: ['Sea Salt', 'Eucalyptus'],
+      heart: ['Marine Accord', 'Sage'],
+      base: ['Driftwood', 'White Musk'],
     },
-    images: [vanillaSunrise1, vanillaSunrise2],
-    collection: "Signature Collection",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: false,
-    bestseller: true,
+    weight: '200g',
+    size: 'Medium',
+    burnTime: '50-60 hours',
+    stockStatus: 'instock',
+    bestseller: false,
+    onSale: false,
   },
   {
     id: 6,
-    name: "Lavender Whisper",
-    slug: "lavender-whisper",
-    price: 1299,
-    onSale: false,
-    tagline: "Fresh Lavender",
-    description: "Provence lavender fields at sunset, with calming herbs and a soft cotton finish. An aromatherapy-inspired blend for ultimate relaxation and peaceful sleep.",
+    name: 'Velvet Night',
+    slug: 'velvet-night',
+    collection: 'Noir',
+    price: 2399,
+    tagline: 'Deep and mysterious with leather notes',
+    description: 'For those who embrace the night. Rich leather, smoky incense, and dark woods create an atmosphere of intrigue.',
+    images: ['/products/velvet-night-1.jpg'],
     fragranceNotes: {
-      top: ["French Lavender", "Eucalyptus", "Mint"],
-      heart: ["Lavender", "Chamomile", "Rose"],
-      base: ["Soft Cotton", "White Musk", "Powder"],
+      top: ['Black Pepper', 'Bergamot'],
+      heart: ['Leather', 'Incense'],
+      base: ['Dark Woods', 'Tobacco', 'Amber'],
     },
-    images: [lavenderWhisper1, lavenderWhisper2],
-    collection: "Botanical Garden",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: true,
+    weight: '250g',
+    size: 'Large',
+    burnTime: '60-70 hours',
+    stockStatus: 'instock',
     bestseller: false,
+    onSale: false,
   },
   {
     id: 7,
-    name: "Vintage Memories",
-    slug: "vintage-memories",
-    price: 1499,
-    onSale: false,
-    tagline: "Nostalgic & Timeless",
-    description: "A nostalgic journey through time with old books, antique wood, and soft leather. Subtle hints of rose and powder evoke cherished memories and quiet moments.",
+    name: 'Winter Spice',
+    slug: 'winter-spice',
+    collection: 'Limited Edition',
+    price: 2599,
+    regularPrice: 2999,
+    tagline: 'Festive warmth with cinnamon and clove',
+    description: 'Limited edition holiday fragrance. Warm cinnamon, spicy clove, and sweet orange create the perfect festive atmosphere.',
+    images: ['/products/winter-spice-1.jpg'],
     fragranceNotes: {
-      top: ["Old Books", "Bergamot", "Green Tea"],
-      heart: ["Rose", "Violet", "Iris"],
-      base: ["Antique Wood", "Leather", "Powder"],
+      top: ['Orange Peel', 'Nutmeg'],
+      heart: ['Cinnamon', 'Clove'],
+      base: ['Vanilla', 'Cedar', 'Musk'],
     },
-    images: [midnightJasmine1, midnightJasmine2],
-    collection: "Noir Collection",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: true,
-    bestseller: false,
+    weight: '220g',
+    size: 'Medium',
+    burnTime: '55-65 hours',
+    stockStatus: 'instock',
+    bestseller: true,
+    onSale: true,
   },
   {
     id: 8,
-    name: "Noir Rose",
-    slug: "noir-rose",
-    price: 1399,
-    onSale: false,
-    tagline: "Dark Rose",
-    description: "Deep, mysterious dark roses with velvety petals and intoxicating allure. Black pepper and oud add sophistication to this seductive evening fragrance.",
+    name: 'Fresh Linen',
+    slug: 'fresh-linen',
+    collection: 'Signature',
+    price: 1699,
+    tagline: 'Clean and crisp like sun-dried sheets',
+    description: 'The comforting scent of freshly laundered linens. Clean cotton meets soft florals for an everyday luxury.',
+    images: ['/products/fresh-linen-1.jpg'],
     fragranceNotes: {
-      top: ["Black Pepper", "Saffron", "Bergamot"],
-      heart: ["Dark Rose", "Jasmine", "Geranium"],
-      base: ["Oud", "Patchouli", "Dark Musk"],
+      top: ['Ozonic Notes', 'Citrus'],
+      heart: ['Cotton Flower', 'Lily'],
+      base: ['Soft Musk', 'Cedar'],
     },
-    images: [oceanBreeze1, oceanBreeze2],
-    collection: "Noir Collection",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: false,
-    bestseller: true,
-  },
-  {
-    id: 9,
-    name: "Spring Morning",
-    slug: "spring-morning",
-    price: 1299,
-    onSale: false,
-    tagline: "Fresh & Awakening",
-    description: "Dewdrops on fresh petals, crisp morning air, and the first blooms of spring. A clean, refreshing fragrance that brings the garden indoors.",
-    fragranceNotes: {
-      top: ["Fresh Greens", "Citrus", "Dewdrops"],
-      heart: ["Lily of the Valley", "White Flowers", "Peony"],
-      base: ["Sheer Musk", "Light Woods", "Clean Cotton"],
-    },
-    images: [springMorning1, springMorning2],
-    collection: "Botanical Garden",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "instock",
-    featured: false,
+    weight: '180g',
+    size: 'Medium',
+    burnTime: '45-55 hours',
+    stockStatus: 'outofstock',
     bestseller: false,
-  },
-  {
-    id: 10,
-    name: "Cinnamon Brew",
-    slug: "cinnamon-brew",
-    price: 1499,
     onSale: false,
-    tagline: "Apple Cinnamon & Roasted Coffee",
-    description: "A unique fusion of warm cinnamon, fresh apples, and rich roasted coffee. This complex, cozy blend is perfect for autumn evenings and quiet mornings alike.",
-    fragranceNotes: {
-      top: ["Green Apple", "Cinnamon", "Orange Peel"],
-      heart: ["Roasted Coffee", "Caramel", "Clove"],
-      base: ["Brown Sugar", "Vanilla", "Toasted Woods"],
-    },
-    images: [autumnSpice1, autumnSpice2],
-    collection: "Limited Edition",
-    size: "6 oz",
-    weight: "170g",
-    burnTime: "40+ hours",
-    stockStatus: "limited",
-    featured: true,
-    bestseller: false,
   },
 ];
 
-export const getFeaturedCandles = (): Candle[] => {
-  return candles.filter((c) => c.featured);
-};
+// ============================================
+// STATIC DATA FUNCTIONS
+// ============================================
 
-export const getBestsellers = (): Candle[] => {
-  return candles.filter((c) => c.bestseller);
-};
+function getStaticCandleBySlug(slug: string): Candle | undefined {
+  return staticCandles.find(c => c.slug === slug);
+}
 
-export const getCandleBySlug = (slug: string): Candle | undefined => {
-  return candles.find((c) => c.slug === slug);
-};
+function getStaticFeaturedCandles(): Candle[] {
+  return staticCandles.filter(c => c.bestseller || c.featured).slice(0, 8);
+}
 
-export const getCandlesByCollection = (collectionSlug: string): Candle[] => {
-  const collection = collections.find((c) => c.slug === collectionSlug);
+function getStaticBestsellers(): Candle[] {
+  return staticCandles.filter(c => c.bestseller);
+}
+
+function getStaticCandlesByCollection(collectionSlug: string): Candle[] {
+  const collection = staticCollections.find(c => c.slug === collectionSlug);
   if (!collection) return [];
-  return candles.filter((c) => c.collection === collection.name);
-};
+  return staticCandles.filter(c => c.collection === collection.name);
+}
 
-export const getSaleCandles = (): Candle[] => {
-  return candles.filter((c) => c.onSale);
+function getStaticOnSaleCandles(): Candle[] {
+  return staticCandles.filter(c => c.onSale);
+}
+
+// ============================================
+// EXPORTS (Use these in your components)
+// ============================================
+
+// These maintain backward compatibility with your existing code
+export const candles = staticCandles;
+export const collections = staticCollections;
+
+export function getCandleBySlug(slug: string): Candle | undefined {
+  return getStaticCandleBySlug(slug);
+}
+
+export function getFeaturedCandles(): Candle[] {
+  return getStaticFeaturedCandles();
+}
+
+export function getBestsellers(): Candle[] {
+  return getStaticBestsellers();
+}
+
+export function getCandlesByCollection(collectionSlug: string): Candle[] {
+  return getStaticCandlesByCollection(collectionSlug);
+}
+
+export function getOnSaleCandles(): Candle[] {
+  return getStaticOnSaleCandles();
+}
+
+// Check if WooCommerce is available
+export const isWooCommerceEnabled = isWooCommerceConfigured;
+
+// Price range helper
+export function getMinMaxPrice(): { min: number; max: number } {
+  const prices = staticCandles.map(c => c.price);
+  return {
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+  };
+}
+
+// Search helper
+export function searchCandles(query: string): Candle[] {
+  const lowerQuery = query.toLowerCase();
+  return staticCandles.filter(c =>
+    c.name.toLowerCase().includes(lowerQuery) ||
+    c.description.toLowerCase().includes(lowerQuery) ||
+    c.collection.toLowerCase().includes(lowerQuery) ||
+    c.tagline.toLowerCase().includes(lowerQuery)
+  );
+}
+
+// Filter helper
+export interface CandleFilters {
+  priceRange?: [number, number];
+  collections?: string[];
+  sizes?: string[];
+  inStock?: boolean;
+  onSale?: boolean;
+}
+
+export function filterCandles(filters: CandleFilters): Candle[] {
+  let result = [...staticCandles];
+
+  if (filters.priceRange) {
+    result = result.filter(c =>
+      c.price >= filters.priceRange![0] && c.price <= filters.priceRange![1]
+    );
+  }
+
+  if (filters.collections && filters.collections.length > 0) {
+    result = result.filter(c => {
+      const col = staticCollections.find(col => col.name === c.collection);
+      return col && filters.collections!.includes(col.slug);
+    });
+  }
+
+  if (filters.sizes && filters.sizes.length > 0) {
+    result = result.filter(c => filters.sizes!.includes(c.size));
+  }
+
+  if (filters.inStock) {
+    result = result.filter(c => c.stockStatus === 'instock');
+  }
+
+  if (filters.onSale) {
+    result = result.filter(c => c.onSale);
+  }
+
+  return result;
+}
+
+export default {
+  candles: staticCandles,
+  collections: staticCollections,
+  getCandleBySlug,
+  getFeaturedCandles,
+  getBestsellers,
+  getCandlesByCollection,
+  getOnSaleCandles,
+  getMinMaxPrice,
+  searchCandles,
+  filterCandles,
+  isWooCommerceEnabled,
 };

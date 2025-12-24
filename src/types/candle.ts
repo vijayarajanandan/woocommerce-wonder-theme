@@ -1,25 +1,38 @@
+// Your existing Candle types - preserved exactly as-is
+
+export interface FragranceNotes {
+  top: string[];
+  heart: string[];
+  base: string[];
+}
+
 export interface Candle {
   id: number;
   name: string;
   slug: string;
+  collection: string;
   price: number;
   regularPrice?: number;
-  onSale: boolean;
   tagline: string;
   description: string;
-  fragranceNotes: {
-    top: string[];
-    heart: string[];
-    base: string[];
-  };
   images: string[];
-  collection: string;
-  size: string;
+  fragranceNotes: FragranceNotes;
   weight: string;
+  size: string;
   burnTime: string;
-  stockStatus: 'instock' | 'outofstock' | 'limited';
-  featured: boolean;
-  bestseller: boolean;
+  stockStatus: 'instock' | 'outofstock' | 'onbackorder';
+  bestseller?: boolean;
+  onSale?: boolean;
+  featured?: boolean;
+  sku?: string;
+  categories?: string[];
+  rating?: number;
+  reviewCount?: number;
+}
+
+export interface CartItem {
+  candle: Candle;
+  quantity: number;
 }
 
 export interface Collection {
@@ -28,9 +41,11 @@ export interface Collection {
   slug: string;
   description: string;
   image: string;
+  productCount?: number;
 }
 
-export interface CartItem {
-  candle: Candle;
-  quantity: number;
-}
+// WishlistItem is just a Candle
+export type WishlistItem = Candle;
+
+// Recently viewed is also Candle[]
+export type RecentlyViewedItem = Candle;

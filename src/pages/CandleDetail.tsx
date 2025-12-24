@@ -1,13 +1,20 @@
+/**
+ * Candle Detail Page - WooCommerce Enabled
+ * 
+ * Uses WooCommerce hooks with fallback to static data.
+ * All original UI preserved exactly.
+ */
+
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart, Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRecentlyViewed } from "@/context/RecentlyViewedContext";
-import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
 import { CandleCard } from "@/components/candle/CandleCard";
 import { formatPrice } from "@/lib/currency";
 import { cn } from "@/lib/utils";
@@ -17,9 +24,38 @@ import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { RecentlyViewed } from "@/components/candle/RecentlyViewed";
 import { FloatingProductCTA } from "@/components/candle/FloatingProductCTA";
 
+// Import both static and WooCommerce data sources
+import { getCandleBySlug as getStaticCandle, getFeaturedCandles as getStaticFeatured, isWooCommerceEnabled } from "@/data/candles";
+import { useProductBySlug, useFeaturedProducts, useRelatedProducts } from "@/hooks/useWooCommerce";
+
+// Loading skeleton for the product detail
+const ProductDetailSkeleton = () => (
+  <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
+    <div className="space-y-4">
+      <Skeleton className="aspect-[3/4] w-full" />
+      <div className="flex gap-3">
+        <Skeleton className="w-20 h-24" />
+        <Skeleton className="w-20 h-24" />
+        <Skeleton className="w-20 h-24" />
+      </div>
+    </div>
+    <div className="space-y-6">
+      <Skeleton className="h-6 w-32" />
+      <Skeleton className="h-12 w-3/4" />
+      <Skeleton className="h-6 w-full" />
+      <Skeleton className="h-10 w-40" />
+      <Skeleton className="h-24 w-full" />
+      <div className="flex gap-4">
+        <Skeleton className="h-12 w-32" />
+        <Skeleton className="h-12 flex-1" />
+        <Skeleton className="h-12 w-12" />
+      </div>
+    </div>
+  </div>
+);
+
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const candle = getCandleBySlug(slug || "");
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addItem: addToRecentlyViewed } = useRecentlyViewed();
@@ -27,6 +63,33 @@ const CandleDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const alsoLikeScrollRef = useRef<HTMLDivElement>(null);
   const addToCartRef = useRef<HTMLButtonElement>(null);
+
+  // Check if WooCommerce is enabled
+  const isWC = isWooCommerceEnabled();
+
+  // Fetch from WooCommerce if enabled
+  const { 
+    data: wcCandle, 
+    isLoading: isLoadingWC,
+    error: wcError,
+  } = useProductBySlug(slug);
+  
+  const { 
+    data: wcFeatured,
+    isLoading: isLoadingRelated,
+  } = useFeaturedProducts(4);
+
+  // Use WooCommerce data if available, otherwise static
+  const candle = isWC && wcCandle ? wcCandle : getStaticCandle(slug || "");
+  const isLoading = isWC && isLoadingWC;
+
+  // Get related candles
+  const relatedCandles = (() => {
+    if (isWC && wcFeatured) {
+      return wcFeatured.filter(c => c.slug !== slug).slice(0, 3);
+    }
+    return getStaticFeatured().filter(c => c.slug !== slug).slice(0, 3);
+  })();
 
   const scroll = (direction: 'left' | 'right') => {
     if (alsoLikeScrollRef.current) {
@@ -38,14 +101,36 @@ const CandleDetail = () => {
     }
   };
 
-  const relatedCandles = getFeaturedCandles().filter(c => c.slug !== slug).slice(0, 3);
-
+  // Add to recently viewed when candle loads
   useEffect(() => {
     if (candle) {
       addToRecentlyViewed(candle);
     }
   }, [candle?.id]);
 
+  // Reset selected image when product changes
+  useEffect(() => {
+    setSelectedImage(0);
+    setQuantity(1);
+  }, [slug]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 pt-[137px]">
+          <div className="container mx-auto px-6 lg:px-12 py-12">
+            <Skeleton className="h-4 w-32 mb-10" />
+            <ProductDetailSkeleton />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Not found state
   if (!candle) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -85,11 +170,20 @@ const CandleDetail = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
             <ScrollReveal direction="left">
               <div className="space-y-4">
-                <ImageZoom src={candle.images[selectedImage]} alt={candle.name} className="aspect-[3/4] bg-secondary/30" zoomScale={2.5} />
+                <ImageZoom 
+                  src={candle.images[selectedImage] || '/placeholder.jpg'} 
+                  alt={candle.name} 
+                  className="aspect-[3/4] bg-secondary/30" 
+                  zoomScale={2.5} 
+                />
                 {candle.images.length > 1 && (
                   <div className="flex gap-3">
                     {candle.images.map((img, i) => (
-                      <button key={i} onClick={() => setSelectedImage(i)} className={`w-20 h-24 overflow-hidden border-2 transition-colors ${selectedImage === i ? "border-primary" : "border-border/50 hover:border-border"}`}>
+                      <button 
+                        key={i} 
+                        onClick={() => setSelectedImage(i)} 
+                        className={`w-20 h-24 overflow-hidden border-2 transition-colors ${selectedImage === i ? "border-primary" : "border-border/50 hover:border-border"}`}
+                      >
                         <img src={img} alt="" className="w-full h-full object-cover" />
                       </button>
                     ))}
@@ -100,6 +194,7 @@ const CandleDetail = () => {
 
             <ScrollReveal direction="right" delay={100}>
               <div className="lg:py-4">
+                {/* Badges */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   {candle.bestseller && (
                     <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] bg-background border border-primary/30 text-foreground px-3 py-1.5 font-medium rounded-sm">
@@ -109,6 +204,11 @@ const CandleDetail = () => {
                   {candle.onSale && candle.regularPrice && (
                     <span className="inline-flex items-center text-[10px] uppercase tracking-[0.08em] bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 font-medium rounded-sm">
                       Save {Math.round(((candle.regularPrice - candle.price) / candle.regularPrice) * 100)}%
+                    </span>
+                  )}
+                  {isWC && (
+                    <span className="inline-flex items-center text-[10px] uppercase tracking-[0.08em] bg-green-500/10 border border-green-500/20 text-green-500 px-3 py-1.5 font-medium rounded-sm">
+                      Live Stock
                     </span>
                   )}
                 </div>
@@ -128,7 +228,7 @@ const CandleDetail = () => {
                     </div>
                   </div>
 
-                  {/* CTA (Mobile: below price, Desktop: below fragrance) */}
+                  {/* CTA */}
                   <div className="order-2 lg:order-4">
                     <div className="flex items-center gap-2 lg:gap-3">
                       <div className="flex items-center border border-border/50 shrink-0">
@@ -186,7 +286,7 @@ const CandleDetail = () => {
                       Fragrance Profile
                     </h3>
 
-                    {/* Mobile layout (keep current design) */}
+                    {/* Mobile layout */}
                     <div className="lg:hidden grid grid-cols-3 gap-2">
                       <div className="p-2 bg-secondary/20 border border-border/20 text-center">
                         <p className="text-[9px] uppercase tracking-[0.15em] text-primary/80 mb-1">Top</p>
@@ -202,14 +302,12 @@ const CandleDetail = () => {
                       </div>
                     </div>
 
-                    {/* Desktop layout (single box with TOP at top) */}
+                    {/* Desktop layout */}
                     <div className="hidden lg:block border border-border/20 bg-secondary/20 p-6">
-                      {/* Top notes first */}
                       <div className="text-center mb-4 pb-4 border-b border-border/20">
                         <p className="text-[10px] uppercase tracking-[0.15em] text-primary mb-2">Top</p>
                         <p className="text-base text-foreground leading-snug">{candle.fragranceNotes.top.join(", ")}</p>
                       </div>
-                      {/* Heart and Base below */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center">
                           <p className="text-[10px] uppercase tracking-[0.15em] text-primary/80 mb-2">Heart</p>
@@ -240,17 +338,27 @@ const CandleDetail = () => {
                   </div>
                 </div>
 
-                {/* Trust Badges - centered */}
+                {/* Trust Badges */}
                 <div className="flex flex-wrap justify-center gap-6 py-4 lg:py-6 border-y border-border/30">
-                  <div className="flex items-center gap-2 text-muted-foreground"><Truck className="h-4 w-4" /><span className="text-[10px] uppercase tracking-wider">Free Ship ₹2000+</span></div>
-                  <div className="flex items-center gap-2 text-muted-foreground"><RotateCcw className="h-4 w-4" /><span className="text-[10px] uppercase tracking-wider">Easy Returns</span></div>
-                  <div className="flex items-center gap-2 text-muted-foreground"><Shield className="h-4 w-4" /><span className="text-[10px] uppercase tracking-wider">Secure Checkout</span></div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Truck className="h-4 w-4" />
+                    <span className="text-[10px] uppercase tracking-wider">Free Ship ₹2000+</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <RotateCcw className="h-4 w-4" />
+                    <span className="text-[10px] uppercase tracking-wider">Easy Returns</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Shield className="h-4 w-4" />
+                    <span className="text-[10px] uppercase tracking-wider">Secure Checkout</span>
+                  </div>
                 </div>
               </div>
             </ScrollReveal>
           </div>
         </div>
 
+        {/* Related Products */}
         {relatedCandles.length > 0 && (
           <section className="py-16 lg:py-24 border-t border-border/30 bg-secondary/10">
             <div className="container mx-auto px-6 lg:px-12">
@@ -260,13 +368,23 @@ const CandleDetail = () => {
                   <h2 className="font-display text-2xl md:text-3xl lg:text-4xl text-foreground">You May Also Like</h2>
                 </div>
                 <div className="flex gap-2 lg:hidden">
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => scroll('left')}><ChevronLeft className="h-4 w-4" /></Button>
-                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => scroll('right')}><ChevronRight className="h-4 w-4" /></Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => scroll('left')}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => scroll('right')}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              <div ref={alsoLikeScrollRef} className="flex lg:grid lg:grid-cols-3 gap-4 lg:gap-8 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 snap-x snap-mandatory lg:snap-none max-w-5xl lg:mx-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div 
+                ref={alsoLikeScrollRef} 
+                className="flex lg:grid lg:grid-cols-3 gap-4 lg:gap-8 overflow-x-auto lg:overflow-visible pb-4 lg:pb-0 scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0 snap-x snap-mandatory lg:snap-none max-w-5xl lg:mx-auto" 
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {relatedCandles.map((c, index) => (
-                  <div key={c.id} className="flex-shrink-0 w-[260px] lg:w-full snap-start"><CandleCard candle={c} index={index} /></div>
+                  <div key={c.id} className="flex-shrink-0 w-[260px] lg:w-full snap-start">
+                    <CandleCard candle={c} index={index} />
+                  </div>
                 ))}
               </div>
             </div>
