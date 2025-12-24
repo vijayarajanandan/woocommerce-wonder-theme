@@ -1,33 +1,45 @@
 import { Candle, Collection } from "@/types/candle";
 
+// Product images
+import sakuraDream1 from "@/assets/products/sakura-dream-1.jpg";
+import sakuraDream2 from "@/assets/products/sakura-dream-2.jpg";
+import seasideSerenity1 from "@/assets/products/seaside-serenity-1.jpg";
+import seasideSerenity2 from "@/assets/products/seaside-serenity-2.jpg";
+import springMorning1 from "@/assets/products/spring-morning-1.jpg";
+import springMorning2 from "@/assets/products/spring-morning-2.jpg";
+import lavenderWhisper1 from "@/assets/products/lavender-whisper-1.jpg";
+import lavenderWhisper2 from "@/assets/products/lavender-whisper-2.jpg";
+import coffeeEmber1 from "@/assets/products/coffee-ember-1.jpg";
+import coffeeEmber2 from "@/assets/products/coffee-ember-2.jpg";
+
 export const collections: Collection[] = [
   {
     id: 1,
     name: "Signature Collection",
     slug: "signature",
     description: "Warm, comforting classics – Seaside Serenity, Spiced Vanilla & Autumn Orchard",
-    image: "https://images.unsplash.com/photo-1599446220151-7a4fbf6a9b6d?w=800&q=80",
+    image: seasideSerenity1,
   },
   {
     id: 2,
     name: "Noir Collection",
     slug: "noir",
     description: "Bold, mysterious evenings – Coffee Ember, Vintage Memories & Noir Rose",
-    image: "https://images.unsplash.com/photo-1603905179785-5b5f26942314?w=800&q=80",
+    image: coffeeEmber1,
   },
   {
     id: 3,
     name: "Botanical Garden",
     slug: "botanical",
     description: "Fresh florals & nature – Sakura Dream, Lavender Whisper & Spring Morning",
-    image: "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&q=80",
+    image: sakuraDream1,
   },
   {
     id: 4,
     name: "Limited Edition",
     slug: "limited",
     description: "Exclusive seasonal blend – Cinnamon Brew, our signature fusion",
-    image: "https://images.unsplash.com/photo-1602607434763-6b9f36c2bc58?w=800&q=80",
+    image: springMorning1,
   },
 ];
 
@@ -45,10 +57,7 @@ export const candles: Candle[] = [
       heart: ["Japanese Cherry", "Peony", "Magnolia"],
       base: ["Soft Musk", "Sandalwood", "Almond"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&q=80",
-      "https://images.unsplash.com/photo-1603905179785-5b5f26942314?w=800&q=80",
-    ],
+    images: [sakuraDream1, sakuraDream2],
     collection: "Botanical Garden",
     size: "6 oz",
     weight: "170g",
@@ -70,10 +79,7 @@ export const candles: Candle[] = [
       heart: ["Ocean Breeze", "Jasmine", "Water Lily"],
       base: ["Driftwood", "Coconut", "White Musk"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1599446220151-7a4fbf6a9b6d?w=800&q=80",
-      "https://images.unsplash.com/photo-1594125311687-3b1b3eefa9f2?w=800&q=80",
-    ],
+    images: [seasideSerenity1, seasideSerenity2],
     collection: "Signature Collection",
     size: "6 oz",
     weight: "170g",
@@ -96,10 +102,7 @@ export const candles: Candle[] = [
       heart: ["Vanilla Bean", "Honey", "Clove"],
       base: ["Tonka Bean", "Amber", "Warm Musk"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1602607434763-6b9f36c2bc58?w=800&q=80",
-      "https://images.unsplash.com/photo-1603905179785-5b5f26942314?w=800&q=80",
-    ],
+    images: [coffeeEmber2, coffeeEmber1],
     collection: "Signature Collection",
     size: "6 oz",
     weight: "170g",
@@ -121,10 +124,7 @@ export const candles: Candle[] = [
       heart: ["Roasted Coffee", "Caramel", "Cinnamon"],
       base: ["Vanilla", "Smoky Woods", "Brown Sugar"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1603905179785-5b5f26942314?w=800&q=80",
-      "https://images.unsplash.com/photo-1602607434763-6b9f36c2bc58?w=800&q=80",
-    ],
+    images: [coffeeEmber1, coffeeEmber2],
     collection: "Noir Collection",
     size: "6 oz",
     weight: "170g",
@@ -146,10 +146,7 @@ export const candles: Candle[] = [
       heart: ["Cinnamon", "Apple Cider", "Clove"],
       base: ["Maple", "Vanilla", "Warm Woods"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1594125311687-3b1b3eefa9f2?w=800&q=80",
-      "https://images.unsplash.com/photo-1599446220151-7a4fbf6a9b6d?w=800&q=80",
-    ],
+    images: [springMorning2, springMorning1],
     collection: "Signature Collection",
     size: "6 oz",
     weight: "170g",
@@ -171,10 +168,7 @@ export const candles: Candle[] = [
       heart: ["Lavender", "Chamomile", "Rose"],
       base: ["Soft Cotton", "White Musk", "Powder"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1611098700399-6ab13c6b055d?w=800&q=80",
-      "https://images.unsplash.com/photo-1616401784845-180882ba9ba8?w=800&q=80",
-    ],
+    images: [lavenderWhisper1, lavenderWhisper2],
     collection: "Botanical Garden",
     size: "6 oz",
     weight: "170g",
@@ -196,10 +190,7 @@ export const candles: Candle[] = [
       heart: ["Rose", "Violet", "Iris"],
       base: ["Antique Wood", "Leather", "Powder"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80",
-      "https://images.unsplash.com/photo-1603905179785-5b5f26942314?w=800&q=80",
-    ],
+    images: [sakuraDream2, lavenderWhisper1],
     collection: "Noir Collection",
     size: "6 oz",
     weight: "170g",
@@ -221,10 +212,7 @@ export const candles: Candle[] = [
       heart: ["Dark Rose", "Jasmine", "Geranium"],
       base: ["Oud", "Patchouli", "Dark Musk"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1606919820299-2d4c9d0e1e8a?w=800&q=80",
-      "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80",
-    ],
+    images: [lavenderWhisper2, sakuraDream1],
     collection: "Noir Collection",
     size: "6 oz",
     weight: "170g",
@@ -246,10 +234,7 @@ export const candles: Candle[] = [
       heart: ["Lily of the Valley", "White Flowers", "Peony"],
       base: ["Sheer Musk", "Light Woods", "Clean Cotton"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1643112246236-5b9e77fd11dd?w=800&q=80",
-      "https://images.unsplash.com/photo-1611098700399-6ab13c6b055d?w=800&q=80",
-    ],
+    images: [springMorning1, springMorning2],
     collection: "Botanical Garden",
     size: "6 oz",
     weight: "170g",
@@ -271,10 +256,7 @@ export const candles: Candle[] = [
       heart: ["Roasted Coffee", "Caramel", "Clove"],
       base: ["Brown Sugar", "Vanilla", "Toasted Woods"],
     },
-    images: [
-      "https://images.unsplash.com/photo-1602607434763-6b9f36c2bc58?w=800&q=80",
-      "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=800&q=80",
-    ],
+    images: [seasideSerenity2, coffeeEmber2],
     collection: "Limited Edition",
     size: "6 oz",
     weight: "170g",
