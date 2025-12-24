@@ -8,12 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ShoppingBag, Lock, Truck, Package } from "lucide-react";
 import { toast } from "sonner";
+import scentoraLogo from "@/assets/scentora-logo.png";
 
 const Checkout = () => {
   const { items, subtotal, itemCount, clearCart } = useCart();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pincode, setPincode] = useState("");
 
+  // Calculate shipping based on pincode (placeholder logic)
   const shippingCost = subtotal >= 2000 ? 0 : 99;
   const total = subtotal + shippingCost;
 
@@ -32,8 +35,14 @@ const Checkout = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background pt-32">
-        <div className="max-w-2xl mx-auto px-6 text-center">
+      <div className="min-h-screen bg-background pt-8">
+        {/* Logo Header */}
+        <div className="flex justify-center py-6 border-b border-border/30">
+          <Link to="/">
+            <img src={scentoraLogo} alt="Scentora" className="h-12 w-auto" />
+          </Link>
+        </div>
+        <div className="max-w-2xl mx-auto px-6 text-center pt-24">
           <div className="w-24 h-24 border border-border/50 rounded-full flex items-center justify-center mx-auto mb-8">
             <ShoppingBag className="h-10 w-10 text-muted-foreground/50" />
           </div>
@@ -50,15 +59,22 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-24 pb-16">
+    <div className="min-h-screen bg-background pt-8 pb-16">
+      {/* Logo Header */}
+      <div className="flex justify-center py-6 border-b border-border/30 mb-8">
+        <Link to="/">
+          <img src={scentoraLogo} alt="Scentora" className="h-12 w-auto" />
+        </Link>
+      </div>
+
       <div className="max-w-7xl mx-auto px-6">
         {/* Back Button */}
         <Link 
-          to="/shop" 
+          to="/cart" 
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8"
         >
           <ArrowLeft className="h-4 w-4" />
-          Continue Shopping
+          Back to Cart
         </Link>
 
         <div className="grid lg:grid-cols-2 gap-16">
@@ -119,7 +135,13 @@ const Checkout = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="pincode">PIN Code</Label>
-                      <Input id="pincode" required placeholder="PIN code" />
+                      <Input 
+                        id="pincode" 
+                        required 
+                        placeholder="PIN code" 
+                        value={pincode}
+                        onChange={(e) => setPincode(e.target.value)}
+                      />
                     </div>
                     <div>
                       <Label htmlFor="country">Country</Label>
@@ -207,6 +229,9 @@ const Checkout = () => {
                     Add {formatPrice(2000 - subtotal)} more for free shipping
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground">
+                  All taxes are inclusive
+                </p>
                 <Separator className="bg-border/30" />
                 <div className="flex justify-between">
                   <span className="font-display text-lg text-foreground">Total</span>

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingBag, Menu, X, Search, User, Heart } from "lucide-react";
+import { ShoppingBag, Menu, X, Search, User, Heart, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -7,17 +7,35 @@ import { Button } from "@/components/ui/button";
 import { SearchModal } from "@/components/search/SearchModal";
 import { AnnouncementBar } from "./AnnouncementBar";
 import scentoraLogo from "@/assets/scentora-logo.png";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const navigation = [
   { name: "Shop", href: "/shop" },
-  { name: "Collections", href: "/collections" },
-  { name: "Our Story", href: "/about" },
+];
+
+const collections = [
+  { name: "All Collections", href: "/collections" },
+  { name: "Signature Collection", href: "/shop?collection=signature" },
+  { name: "Noir Collection", href: "/shop?collection=noir" },
+  { name: "Botanical Garden", href: "/shop?collection=botanical" },
+  { name: "Limited Edition", href: "/shop?collection=limited" },
 ];
 
 export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const { toggleCart, itemCount } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
 
@@ -56,6 +74,35 @@ export const Header = () => {
                     {item.name}
                   </Link>
                 ))}
+                
+                {/* Collections Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1 text-[11px] font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-300">
+                      Collections
+                      <ChevronDown className="h-3 w-3" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56 bg-background border border-border/50">
+                    {collections.map((item) => (
+                      <DropdownMenuItem key={item.name} asChild>
+                        <Link
+                          to={item.href}
+                          className="text-sm text-muted-foreground hover:text-primary cursor-pointer"
+                        >
+                          {item.name}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Link
+                  to="/about"
+                  className="text-[11px] font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors duration-300"
+                >
+                  Our Story
+                </Link>
               </div>
             </div>
 
@@ -136,24 +183,50 @@ export const Header = () => {
           {mobileMenuOpen && (
             <div className="lg:hidden py-8 border-t border-border/30 animate-fade-in">
               <div className="flex flex-col items-center space-y-6">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-                <div className="flex items-center gap-6 pt-4 border-t border-border/30">
+                <Link
+                  to="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Shop
+                </Link>
+
+                {/* Mobile Collections Dropdown */}
+                <Collapsible open={collectionsOpen} onOpenChange={setCollectionsOpen}>
+                  <CollapsibleTrigger className="flex items-center gap-2 text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors">
+                    Collections
+                    <ChevronDown className={`h-4 w-4 transition-transform ${collectionsOpen ? 'rotate-180' : ''}`} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-4 space-y-3 text-center">
+                    {collections.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block text-sm text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Link
+                  to="/about"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Our Story
+                </Link>
+
+                <div className="flex items-center gap-6 pt-4 border-t border-border/30 w-full justify-center overflow-x-auto">
                   <Button
                     variant="ghost"
                     onClick={() => {
                       setMobileMenuOpen(false);
                       setSearchOpen(true);
                     }}
-                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap"
                   >
                     <Search className="h-4 w-4" />
                     Search
@@ -161,7 +234,7 @@ export const Header = () => {
                   <Link
                     to="/wishlist"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap"
                   >
                     <Heart className="h-4 w-4" />
                     Wishlist
@@ -169,7 +242,7 @@ export const Header = () => {
                   <Link
                     to="/account"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap"
                   >
                     <User className="h-4 w-4" />
                     Account

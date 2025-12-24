@@ -60,8 +60,8 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
-          {/* Top right - Wishlist & Quick View */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          {/* Top right - Wishlist & Quick View - Always visible on mobile */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-300">
             <Button
               onClick={handleToggleWishlist}
               variant="ghost"
@@ -83,8 +83,8 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
             </Button>
           </div>
 
-          {/* Bottom - Add to Cart */}
-          <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
+          {/* Bottom - Add to Cart - Always visible on mobile */}
+          <div className="absolute bottom-4 left-4 right-4 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-500 translate-y-0 lg:translate-y-2 lg:group-hover:translate-y-0">
             <Button
               onClick={handleAddToCart}
               variant="default"

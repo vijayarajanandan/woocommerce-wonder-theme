@@ -4,19 +4,18 @@ import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Minus, Trash2, ShoppingBag, ArrowLeft, ArrowRight, Truck } from "lucide-react";
+import { Plus, Minus, Trash2, ShoppingBag, ArrowLeft, ArrowRight } from "lucide-react";
 import { PromoCodeInput } from "@/components/cart/PromoCodeInput";
+import scentoraLogo from "@/assets/scentora-logo.png";
 
 const Cart = () => {
   const { items, subtotal, itemCount, removeItem, updateQuantity } = useCart();
   const [promoCode, setPromoCode] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
 
-  const shippingCost = subtotal >= 2000 ? 0 : 99;
-  
   // Calculate discount amount (assuming percentage discount for now)
   const discountAmount = promoCode ? Math.round(subtotal * (discount / 100)) : 0;
-  const total = subtotal - discountAmount + shippingCost;
+  const estimatedTotal = subtotal - discountAmount;
 
   const handleApplyPromo = (discountPercent: number, code: string) => {
     setDiscount(discountPercent);
@@ -30,8 +29,14 @@ const Cart = () => {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background pt-32">
-        <div className="max-w-2xl mx-auto px-6 text-center">
+      <div className="min-h-screen bg-background pt-8">
+        {/* Logo Header */}
+        <div className="flex justify-center py-6 border-b border-border/30">
+          <Link to="/">
+            <img src={scentoraLogo} alt="Scentora" className="h-12 w-auto" />
+          </Link>
+        </div>
+        <div className="max-w-2xl mx-auto px-6 text-center pt-24">
           <div className="w-24 h-24 border border-border/50 rounded-full flex items-center justify-center mx-auto mb-8">
             <ShoppingBag className="h-10 w-10 text-muted-foreground/50" />
           </div>
@@ -48,7 +53,14 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-24 pb-16">
+    <div className="min-h-screen bg-background pt-8 pb-16">
+      {/* Logo Header */}
+      <div className="flex justify-center py-6 border-b border-border/30 mb-8">
+        <Link to="/">
+          <img src={scentoraLogo} alt="Scentora" className="h-12 w-auto" />
+        </Link>
+      </div>
+
       <div className="max-w-6xl mx-auto px-6">
         {/* Back Button */}
         <Link 
@@ -144,20 +156,9 @@ const Cart = () => {
                   <span className="text-muted-foreground">Subtotal ({itemCount} items)</span>
                   <span className="text-foreground">{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Shipping
-                  </span>
-                  <span className="text-foreground">
-                    {shippingCost === 0 ? "Free" : formatPrice(shippingCost)}
-                  </span>
-                </div>
-                {shippingCost > 0 && (
-                  <p className="text-xs text-primary">
-                    Add {formatPrice(2000 - subtotal)} more for free shipping
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Shipping & taxes calculated at checkout
+                </p>
               </div>
 
               <Separator className="bg-border/30 mb-6" />
@@ -180,8 +181,8 @@ const Cart = () => {
               )}
 
               <div className="flex justify-between mb-6">
-                <span className="font-display text-lg text-foreground">Total</span>
-                <span className="font-display text-2xl text-foreground">{formatPrice(total)}</span>
+                <span className="font-display text-lg text-foreground">Estimated Total</span>
+                <span className="font-display text-2xl text-foreground">{formatPrice(estimatedTotal)}</span>
               </div>
 
               <Button asChild size="lg" className="w-full">
@@ -190,10 +191,6 @@ const Cart = () => {
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
-
-              <p className="text-xs text-muted-foreground text-center mt-4">
-                Taxes calculated at checkout
-              </p>
             </div>
           </div>
         </div>
