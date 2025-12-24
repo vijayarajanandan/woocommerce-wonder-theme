@@ -45,7 +45,7 @@ const Index = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-[137px]">
         {/* Hero Section */}
         <section className="relative h-[90vh] min-h-[700px] flex items-center justify-center overflow-hidden">
           {/* Background */}
