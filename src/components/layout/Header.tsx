@@ -3,6 +3,7 @@ import { ShoppingBag, Menu, X, Search, User } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
+import scentoraLogo from "@/assets/scentora-logo.png";
 
 const navigation = [
   { name: "Shop", href: "/shop" },
@@ -46,9 +47,11 @@ export const Header = () => {
           {/* Center - Logo */}
           <div className="flex-1 flex justify-center">
             <Link to="/" className="group">
-              <span className="font-display text-2xl lg:text-3xl tracking-[0.2em] text-foreground group-hover:text-primary transition-colors duration-300">
-                SCENTORA
-              </span>
+              <img 
+                src={scentoraLogo} 
+                alt="Scentora" 
+                className="h-14 lg:h-16 w-auto transition-opacity duration-300 group-hover:opacity-80"
+              />
             </Link>
           </div>
 

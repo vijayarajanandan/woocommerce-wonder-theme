@@ -4,6 +4,7 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Plus } from "lucide-react";
+import { formatPrice } from "@/lib/currency";
 
 interface CandleCardProps {
   candle: Candle;
@@ -88,11 +89,11 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
         </p>
         <div className="flex items-center justify-center gap-3">
           <span className="text-sm font-medium text-foreground">
-            ${candle.price}
+            {formatPrice(candle.price)}
           </span>
           {candle.regularPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ${candle.regularPrice}
+              {formatPrice(candle.regularPrice)}
             </span>
           )}
         </div>
