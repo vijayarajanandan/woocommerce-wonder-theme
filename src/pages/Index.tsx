@@ -1,14 +1,41 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Flame, Truck, Leaf, Award, Hand, Droplets, Timer, Sparkles } from "lucide-react";
+import { ArrowRight, Flame, Truck, Leaf, Award, Hand, Droplets, Timer, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CandleCard } from "@/components/candle/CandleCard";
-import { getFeaturedCandles, getBestsellers, collections } from "@/data/candles";
+import { getFeaturedCandles, getBestsellers, collections, candles } from "@/data/candles";
+import { useRef } from "react";
+
+// Import product images for banners
+import sakuraDream1 from "@/assets/products/sakura-dream-1-enhanced.jpg";
+import coffeeEmber1 from "@/assets/products/coffee-ember-1-enhanced.jpg";
+import lavenderWhisper1 from "@/assets/products/lavender-whisper-1-enhanced.jpg";
+import autumnSpice1 from "@/assets/products/autumn-spice-1-enhanced.jpg";
 
 const Index = () => {
-  const featuredCandles = getFeaturedCandles().slice(0, 4);
+  const featuredCandles = getFeaturedCandles();
   const bestsellers = getBestsellers();
+  const featuredScrollRef = useRef<HTMLDivElement>(null);
+  const bestsellersScrollRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (ref: React.RefObject<HTMLDivElement>, direction: 'left' | 'right') => {
+    if (ref.current) {
+      const scrollAmount = 320;
+      ref.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  // Collection themed images using our products
+  const collectionImages: Record<string, string> = {
+    'signature': sakuraDream1,
+    'noir': coffeeEmber1,
+    'botanical': lavenderWhisper1,
+    'limited': autumnSpice1,
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -20,14 +47,14 @@ const Index = () => {
           {/* Background */}
           <div className="absolute inset-0 luxury-gradient" />
           <div 
-            className="absolute inset-0 opacity-20"
+            className="absolute inset-0 opacity-30"
             style={{
-              backgroundImage: `url('https://images.unsplash.com/photo-1602607434763-6b9f36c2bc58?w=1600')`,
+              backgroundImage: `url(${sakuraDream1})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/40 to-background" />
 
           {/* Content */}
           <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
@@ -93,23 +120,49 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Featured Collection */}
+        {/* Featured Collection - Scrollable */}
         <section className="py-24 lg:py-32">
           <div className="container mx-auto px-6 lg:px-12">
-            <div className="text-center mb-16">
-              <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
-                Curated Selection
-              </p>
-              <h2 className="font-display text-4xl md:text-5xl text-foreground">
-                Featured Candles
-              </h2>
+            <div className="flex items-end justify-between mb-16">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
+                  Curated Selection
+                </p>
+                <h2 className="font-display text-4xl md:text-5xl text-foreground">
+                  Featured Candles
+                </h2>
+              </div>
+              <div className="hidden md:flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => scroll(featuredScrollRef, 'left')}
+                  className="border-border/50 hover:border-primary hover:bg-primary/5"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => scroll(featuredScrollRef, 'right')}
+                  className="border-border/50 hover:border-primary hover:bg-primary/5"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
+            <div 
+              ref={featuredScrollRef}
+              className="flex gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6 snap-x snap-mandatory"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
               {featuredCandles.map((candle, index) => (
-                <CandleCard key={candle.id} candle={candle} index={index} />
+                <div key={candle.id} className="flex-shrink-0 w-[280px] sm:w-[300px] snap-start">
+                  <CandleCard candle={candle} index={index} />
+                </div>
               ))}
             </div>
-            <div className="text-center mt-16">
+            <div className="text-center mt-12">
               <Button asChild variant="gold" size="lg">
                 <Link to="/shop" className="flex items-center gap-3">
                   View All Candles 
@@ -120,7 +173,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* About Strip */}
+        {/* About Strip - Using Product Image */}
         <section className="py-24 lg:py-32 bg-secondary/20 border-y border-border/30">
           <div className="container mx-auto px-6 lg:px-12">
             <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
@@ -183,7 +236,7 @@ const Index = () => {
               <div className="order-1 lg:order-2 relative">
                 <div className="aspect-[4/5] overflow-hidden">
                   <img
-                    src="https://images.unsplash.com/photo-1603006905003-be475563bc59?w=800"
+                    src={coffeeEmber1}
                     alt="Scentora candle crafting"
                     className="w-full h-full object-cover"
                   />
@@ -195,28 +248,54 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Bestsellers */}
+        {/* Bestsellers - Scrollable */}
         {bestsellers.length > 0 && (
           <section className="py-24 lg:py-32">
             <div className="container mx-auto px-6 lg:px-12">
-              <div className="text-center mb-16">
-                <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
-                  Most Loved
-                </p>
-                <h2 className="font-display text-4xl md:text-5xl text-foreground">
-                  Bestsellers
-                </h2>
+              <div className="flex items-end justify-between mb-16">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
+                    Most Loved
+                  </p>
+                  <h2 className="font-display text-4xl md:text-5xl text-foreground">
+                    Bestsellers
+                  </h2>
+                </div>
+                <div className="hidden md:flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => scroll(bestsellersScrollRef, 'left')}
+                    className="border-border/50 hover:border-primary hover:bg-primary/5"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={() => scroll(bestsellersScrollRef, 'right')}
+                    className="border-border/50 hover:border-primary hover:bg-primary/5"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10 max-w-5xl mx-auto">
+              <div 
+                ref={bestsellersScrollRef}
+                className="flex gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6 snap-x snap-mandatory"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 {bestsellers.map((candle, index) => (
-                  <CandleCard key={candle.id} candle={candle} index={index} />
+                  <div key={candle.id} className="flex-shrink-0 w-[280px] sm:w-[300px] snap-start">
+                    <CandleCard candle={candle} index={index} />
+                  </div>
                 ))}
               </div>
             </div>
           </section>
         )}
 
-        {/* Collections Preview */}
+        {/* Collections Preview - Using Product Images */}
         <section className="py-24 lg:py-32 bg-secondary/20 border-y border-border/30">
           <div className="container mx-auto px-6 lg:px-12">
             <div className="text-center mb-16">
@@ -236,7 +315,7 @@ const Index = () => {
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <img
-                    src={collection.image}
+                    src={collectionImages[collection.slug] || collection.image}
                     alt={collection.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
