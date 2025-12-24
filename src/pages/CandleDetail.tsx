@@ -95,10 +95,9 @@ const CandleDetail = () => {
                     Bestseller
                   </span>
                 )}
-                {candle.onSale && (
-                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] bg-destructive/10 border border-destructive/30 text-destructive px-3 py-1.5 font-medium rounded-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                    Sale
+                {candle.onSale && candle.regularPrice && (
+                  <span className="inline-flex items-center text-[10px] uppercase tracking-[0.08em] bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 font-medium rounded-sm">
+                    Save {Math.round(((candle.regularPrice - candle.price) / candle.regularPrice) * 100)}%
                   </span>
                 )}
                 {candle.stockStatus === 'limited' && (
@@ -201,7 +200,7 @@ const CandleDetail = () => {
                   onClick={() => toggleWishlist(candle)}
                   className={cn(
                     "px-4",
-                    isInWishlist(candle.id) && "text-destructive border-destructive/50 hover:text-destructive"
+                    isInWishlist(candle.id) && "text-primary border-primary/50 hover:text-primary"
                   )}
                 >
                   <Heart className={cn("h-5 w-5", isInWishlist(candle.id) && "fill-current")} />
