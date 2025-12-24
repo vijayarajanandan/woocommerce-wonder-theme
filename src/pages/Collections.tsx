@@ -4,6 +4,19 @@ import { Footer } from "@/components/layout/Footer";
 import { collections, candles } from "@/data/candles";
 import { ArrowRight } from "lucide-react";
 
+// Themed collection images
+import signatureCollection from "@/assets/collections/signature-collection.jpg";
+import noirCollection from "@/assets/collections/noir-collection.jpg";
+import botanicalCollection from "@/assets/collections/botanical-collection.jpg";
+import limitedCollection from "@/assets/collections/limited-collection.jpg";
+
+const collectionImages: Record<string, string> = {
+  'signature': signatureCollection,
+  'noir': noirCollection,
+  'botanical': botanicalCollection,
+  'limited': limitedCollection,
+};
+
 const Collections = () => {
   // Get product count per collection
   const getProductCount = (collectionName: string) => {
@@ -38,7 +51,7 @@ const Collections = () => {
                 className="group relative block aspect-[21/9] overflow-hidden rounded-lg opacity-0 animate-fade-in"
               >
                 <img
-                  src={collections[0].image}
+                  src={collectionImages[collections[0].slug] || collections[0].image}
                   alt={collections[0].name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
@@ -77,7 +90,7 @@ const Collections = () => {
                   style={{ animationDelay: `${(index + 1) * 100}ms`, animationFillMode: 'forwards' }}
                 >
                   <img
-                    src={collection.image}
+                    src={collectionImages[collection.slug] || collection.image}
                     alt={collection.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />

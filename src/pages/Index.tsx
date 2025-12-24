@@ -8,11 +8,14 @@ import { getFeaturedCandles, getBestsellers, collections, candles } from "@/data
 import { useRef } from "react";
 
 // Import product images for banners
-import sakuraDream1 from "@/assets/products/sakura-dream-1-enhanced.jpg";
 import coffeeEmber1 from "@/assets/products/coffee-ember-1-enhanced.jpg";
 import coffeeEmber2 from "@/assets/products/coffee-ember-2-enhanced.jpg";
-import lavenderWhisper1 from "@/assets/products/lavender-whisper-1-enhanced.jpg";
-import autumnSpice1 from "@/assets/products/autumn-spice-1-enhanced.jpg";
+
+// Themed collection images
+import signatureCollection from "@/assets/collections/signature-collection.jpg";
+import noirCollection from "@/assets/collections/noir-collection.jpg";
+import botanicalCollection from "@/assets/collections/botanical-collection.jpg";
+import limitedCollection from "@/assets/collections/limited-collection.jpg";
 
 const Index = () => {
   const featuredCandles = getFeaturedCandles();
@@ -30,12 +33,12 @@ const Index = () => {
     }
   };
 
-  // Collection themed images using our products
+  // Collection themed images using candle flames
   const collectionImages: Record<string, string> = {
-    'signature': sakuraDream1,
-    'noir': coffeeEmber1,
-    'botanical': lavenderWhisper1,
-    'limited': autumnSpice1,
+    'signature': signatureCollection,
+    'noir': noirCollection,
+    'botanical': botanicalCollection,
+    'limited': limitedCollection,
   };
 
   return (
