@@ -144,12 +144,13 @@ export const CartSidebar = () => {
                   </Link>
                 </Button>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="lg" 
-                  className="w-full text-muted-foreground hover:text-foreground" 
+                  className="w-full" 
                   onClick={closeCart}
+                  asChild
                 >
-                  Continue Shopping
+                  <Link to="/cart">View Cart</Link>
                 </Button>
               </div>
             </>
