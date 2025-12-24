@@ -96,11 +96,11 @@ const Index = () => {
 
           {/* Scroll indicator */}
           <div 
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-0 animate-fade-in" 
+            className="absolute bottom-12 left-0 right-0 flex flex-col items-center justify-center gap-3 opacity-0 animate-fade-in" 
             style={{ animationDelay: '1000ms' }}
           >
-            <Flame className="h-5 w-5 text-primary animate-pulse mx-auto" />
-            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground text-center">Discover</span>
+            <Flame className="h-5 w-5 text-primary animate-pulse" />
+            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Discover</span>
           </div>
         </section>
 

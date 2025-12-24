@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -27,7 +27,7 @@ export const NewsletterSignup = () => {
 
   if (isSubscribed) {
     return (
-      <div className="bg-secondary/30 border border-border/30 p-8 text-center">
+      <div className="text-center py-8">
         <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
           <Check className="h-6 w-6 text-primary" />
         </div>
@@ -42,35 +42,32 @@ export const NewsletterSignup = () => {
   }
 
   return (
-    <div className="bg-secondary/30 border border-border/30 p-8">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-          <Mail className="h-5 w-5 text-primary" />
-        </div>
-        <div>
-          <h3 className="font-display text-lg text-foreground">
-            Join Our Community
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Get 10% off your first order
-          </p>
-        </div>
+    <div className="text-center max-w-md mx-auto">
+      <div className="flex items-center justify-center gap-2 mb-4">
+        <Sparkles className="h-5 w-5 text-primary" />
+        <h3 className="font-display text-xl text-foreground">
+          Join Our Community
+        </h3>
       </div>
-
-      <p className="text-sm text-muted-foreground mb-6">
+      
+      <p className="text-sm text-muted-foreground mb-2">
+        Get 10% off your first order
+      </p>
+      
+      <p className="text-xs text-muted-foreground mb-6">
         Subscribe for exclusive offers, new arrivals, and fragrance tips.
       </p>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form onSubmit={handleSubmit} className="flex gap-2 max-w-sm mx-auto">
         <Input
           type="email"
           placeholder="Enter your email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="flex-1"
+          className="flex-1 bg-background/50 border-border/50"
         />
-        <Button type="submit" disabled={isSubmitting} size="icon">
+        <Button type="submit" disabled={isSubmitting} size="icon" className="shrink-0">
           {isSubmitting ? (
             <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
           ) : (
@@ -79,7 +76,7 @@ export const NewsletterSignup = () => {
         </Button>
       </form>
 
-      <p className="text-[10px] text-muted-foreground mt-4">
+      <p className="text-[10px] text-muted-foreground/70 mt-4">
         By subscribing, you agree to our Privacy Policy and consent to receive updates.
       </p>
     </div>
