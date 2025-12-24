@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { Candle } from "@/types/candle";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, Heart, Eye } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 
 interface CandleCardProps {
@@ -14,11 +15,19 @@ interface CandleCardProps {
 
 export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) => {
   const { addItem } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const inWishlist = isInWishlist(candle.id);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(candle, 1);
+  };
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(candle);
   };
 
   return (
@@ -41,7 +50,29 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         
-        {/* Quick add button */}
+        {/* Top right - Wishlist & Quick View */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <Button
+            onClick={handleToggleWishlist}
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background",
+              inWishlist && "text-destructive hover:text-destructive"
+            )}
+          >
+            <Heart className={cn("h-4 w-4", inWishlist && "fill-current")} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Bottom - Add to Cart */}
         <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
           <Button
             onClick={handleAddToCart}
@@ -54,21 +85,23 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
           </Button>
         </div>
 
-        {/* Badges */}
+        {/* Sleek Badges */}
         {(candle.bestseller || candle.onSale || candle.stockStatus === 'limited') && (
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5">
             {candle.bestseller && (
-              <span className="text-[9px] uppercase tracking-[0.15em] bg-primary text-primary-foreground px-3 py-1.5 font-medium">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] bg-background/90 backdrop-blur-sm text-foreground px-2.5 py-1 font-medium border border-primary/30 rounded-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                 Bestseller
               </span>
             )}
             {candle.onSale && (
-              <span className="text-[9px] uppercase tracking-[0.15em] bg-destructive text-destructive-foreground px-3 py-1.5 font-medium">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] bg-destructive/90 backdrop-blur-sm text-destructive-foreground px-2.5 py-1 font-medium rounded-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-destructive-foreground/80" />
                 Sale
               </span>
             )}
             {candle.stockStatus === 'limited' && !candle.onSale && !candle.bestseller && (
-              <span className="text-[9px] uppercase tracking-[0.15em] bg-muted text-muted-foreground px-3 py-1.5 font-medium">
+              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] bg-background/90 backdrop-blur-sm text-muted-foreground px-2.5 py-1 font-medium border border-border/50 rounded-sm">
                 Limited
               </span>
             )}

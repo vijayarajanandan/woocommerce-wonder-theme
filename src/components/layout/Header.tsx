@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { ShoppingBag, Menu, X, Search, User } from "lucide-react";
+import { ShoppingBag, Menu, X, Search, User, Heart } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { Button } from "@/components/ui/button";
 import scentoraLogo from "@/assets/scentora-logo.png";
 
@@ -15,11 +16,12 @@ export const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { toggleCart, itemCount } = useCart();
+  const { itemCount: wishlistCount } = useWishlist();
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border/30">
       <nav className="container mx-auto px-6 lg:px-12">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-24 items-center justify-between">
           {/* Left - Navigation (Desktop) / Menu Button (Mobile) */}
           <div className="flex items-center gap-8 w-1/3">
             <Button
@@ -56,7 +58,7 @@ export const Header = () => {
           </div>
 
           {/* Right - Icons */}
-          <div className="flex items-center justify-end gap-2 w-1/3">
+          <div className="flex items-center justify-end gap-1 w-1/3">
             {/* Search */}
             <Button
               variant="ghost"
@@ -78,6 +80,24 @@ export const Header = () => {
               <Link to="/account">
                 <User className="h-5 w-5" />
                 <span className="sr-only">Account</span>
+              </Link>
+            </Button>
+
+            {/* Wishlist */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative text-foreground hover:text-primary"
+              asChild
+            >
+              <Link to="/wishlist">
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-[10px] font-medium text-primary-foreground flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+                <span className="sr-only">Wishlist</span>
               </Link>
             </Button>
 
@@ -129,6 +149,14 @@ export const Header = () => {
                 </Link>
               ))}
               <div className="flex items-center gap-6 pt-4 border-t border-border/30">
+                <Link
+                  to="/wishlist"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+                >
+                  <Heart className="h-4 w-4" />
+                  Wishlist
+                </Link>
                 <Link
                   to="/account"
                   onClick={() => setMobileMenuOpen(false)}
