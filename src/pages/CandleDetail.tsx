@@ -1,17 +1,21 @@
 import { useParams, Link } from "react-router-dom";
 import { useState } from "react";
-import { ChevronLeft, Minus, Plus, Flame, Truck, RotateCcw, Shield } from "lucide-react";
+import { ChevronLeft, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
 import { CandleCard } from "@/components/candle/CandleCard";
 import { formatPrice } from "@/lib/currency";
+import { cn } from "@/lib/utils";
+
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const candle = getCandleBySlug(slug || "");
   const { addItem } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
@@ -83,20 +87,22 @@ const CandleDetail = () => {
 
             {/* Details */}
             <div className="lg:py-4">
-              {/* Badges */}
-              <div className="flex gap-3 mb-6">
+              {/* Sleek Badges */}
+              <div className="flex flex-wrap gap-2 mb-6">
                 {candle.bestseller && (
-                  <span className="text-[9px] uppercase tracking-[0.15em] bg-primary text-primary-foreground px-3 py-1.5 font-medium">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] bg-background border border-primary/30 text-foreground px-3 py-1.5 font-medium rounded-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                     Bestseller
                   </span>
                 )}
                 {candle.onSale && (
-                  <span className="text-[9px] uppercase tracking-[0.15em] bg-destructive text-destructive-foreground px-3 py-1.5 font-medium">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] bg-destructive/10 border border-destructive/30 text-destructive px-3 py-1.5 font-medium rounded-sm">
+                    <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
                     Sale
                   </span>
                 )}
                 {candle.stockStatus === 'limited' && (
-                  <span className="text-[9px] uppercase tracking-[0.15em] bg-muted text-muted-foreground px-3 py-1.5 font-medium">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] bg-muted border border-border text-muted-foreground px-3 py-1.5 font-medium rounded-sm">
                     Limited Stock
                   </span>
                 )}
@@ -188,6 +194,17 @@ const CandleDetail = () => {
                   disabled={candle.stockStatus === 'outofstock'}
                 >
                   {candle.stockStatus === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => toggleWishlist(candle)}
+                  className={cn(
+                    "px-4",
+                    isInWishlist(candle.id) && "text-destructive border-destructive/50 hover:text-destructive"
+                  )}
+                >
+                  <Heart className={cn("h-5 w-5", isInWishlist(candle.id) && "fill-current")} />
                 </Button>
               </div>
 
