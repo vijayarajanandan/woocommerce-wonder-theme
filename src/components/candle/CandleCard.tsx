@@ -83,13 +83,18 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
             </Button>
           </div>
 
-          {/* Bottom - Add to Cart - Always visible on mobile */}
-          <div className="absolute bottom-4 left-4 right-4 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-500 translate-y-0 lg:translate-y-2 lg:group-hover:translate-y-0">
+          {/* Bottom - Add to Cart - Always visible on mobile, pointer-events handled */}
+          <div className="absolute bottom-4 left-4 right-4 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all duration-500 translate-y-0 lg:translate-y-2 lg:group-hover:translate-y-0 pointer-events-auto">
             <Button
               onClick={handleAddToCart}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addItem(candle, 1);
+              }}
               variant="default"
               size="sm"
-              className="w-full"
+              className="w-full touch-manipulation"
             >
               <Plus className="h-4 w-4 mr-1" />
               Add to Cart

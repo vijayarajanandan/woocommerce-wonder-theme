@@ -219,33 +219,32 @@ export const Header = () => {
                   Our Story
                 </Link>
 
-                <div className="flex items-center gap-6 pt-4 border-t border-border/30 w-full justify-center overflow-x-auto">
-                  <Button
-                    variant="ghost"
+                <div className="flex items-center justify-center gap-8 pt-6 border-t border-border/30 mt-2">
+                  <button
                     onClick={() => {
                       setMobileMenuOpen(false);
                       setSearchOpen(true);
                     }}
-                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap"
+                    className="flex flex-col items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
                   >
-                    <Search className="h-4 w-4" />
-                    Search
-                  </Button>
+                    <Search className="h-5 w-5" />
+                    <span className="text-[10px] uppercase tracking-wider">Search</span>
+                  </button>
                   <Link
                     to="/wishlist"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap"
+                    className="flex flex-col items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
                   >
-                    <Heart className="h-4 w-4" />
-                    Wishlist
+                    <Heart className="h-5 w-5" />
+                    <span className="text-[10px] uppercase tracking-wider">Wishlist</span>
                   </Link>
                   <Link
                     to="/account"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="text-sm font-body uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-colors flex items-center gap-2 whitespace-nowrap"
+                    className="flex flex-col items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors"
                   >
-                    <User className="h-4 w-4" />
-                    Account
+                    <User className="h-5 w-5" />
+                    <span className="text-[10px] uppercase tracking-wider">Account</span>
                   </Link>
                 </div>
               </div>
