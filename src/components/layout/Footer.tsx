@@ -1,10 +1,18 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook, Mail } from "lucide-react";
 import scentoraIcon from "@/assets/scentora-icon.png";
+import { NewsletterSignup } from "@/components/newsletter/NewsletterSignup";
 
 export const Footer = () => {
   return (
     <footer className="bg-secondary/20 border-t border-border/30">
+      {/* Newsletter Section */}
+      <div className="container mx-auto px-6 lg:px-12 py-12 border-b border-border/30">
+        <div className="max-w-md mx-auto lg:max-w-none lg:mx-0 lg:w-96">
+          <NewsletterSignup />
+        </div>
+      </div>
+
       <div className="container mx-auto px-6 lg:px-12 py-20">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 lg:gap-16">
           {/* Brand */}
@@ -85,6 +93,11 @@ export const Footer = () => {
               Help
             </h4>
             <ul className="space-y-4">
+              <li>
+                <Link to="/faq" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  FAQ
+                </Link>
+              </li>
               <li>
                 <Link to="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Shipping Policy

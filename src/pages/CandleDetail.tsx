@@ -1,27 +1,38 @@
 import { useParams, Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { useRecentlyViewed } from "@/context/RecentlyViewedContext";
 import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
 import { CandleCard } from "@/components/candle/CandleCard";
 import { formatPrice } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { ImageZoom } from "@/components/ui/image-zoom";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { ReviewSection } from "@/components/reviews/ReviewSection";
+import { RecentlyViewed } from "@/components/candle/RecentlyViewed";
 
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const candle = getCandleBySlug(slug || "");
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addItem: addToRecentlyViewed } = useRecentlyViewed();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
   const relatedCandles = getFeaturedCandles().filter(c => c.slug !== slug).slice(0, 3);
+
+  // Track recently viewed
+  useEffect(() => {
+    if (candle) {
+      addToRecentlyViewed(candle);
+    }
+  }, [candle?.id]);
 
   if (!candle) {
     return (
@@ -248,9 +259,15 @@ const CandleDetail = () => {
                   <CandleCard key={c.id} candle={c} index={index} />
                 ))}
               </div>
-            </div>
-          </section>
+              </div>
+            </section>
         )}
+
+        {/* Reviews Section */}
+        <ReviewSection productId={candle.id} productName={candle.name} />
+
+        {/* Recently Viewed */}
+        <RecentlyViewed excludeId={candle.id} />
       </main>
       <Footer />
     </div>
