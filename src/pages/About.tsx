@@ -1,6 +1,9 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { Flame, Heart, Leaf, Award, Users, MapPin } from "lucide-react";
+import { Heart, Leaf, Award, Users } from "lucide-react";
+
+// Import product images
+import lavenderWhisper2 from "@/assets/products/lavender-whisper-2-enhanced.jpg";
 
 const About = () => {
   return (
@@ -34,8 +37,8 @@ const About = () => {
               <div className="relative">
                 <div className="aspect-[4/5] overflow-hidden">
                   <img
-                    src="https://images.unsplash.com/photo-1603006905003-be475563bc59?w=800"
-                    alt="Candle making process"
+                    src={lavenderWhisper2}
+                    alt="Scentora candle crafting"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -61,7 +64,7 @@ const About = () => {
                     to places of beauty and serenity.
                   </p>
                   <p>
-                    Today, we hand-pour every candle in our workshop using 100% natural soy wax, 
+                    Today, we hand-pour every candle using 100% natural soy wax, 
                     premium fragrance oils, and lead-free cotton wicks. We believe in sustainable 
                     luxury that doesn't compromise on quality or the environment.
                   </p>
@@ -160,43 +163,6 @@ const About = () => {
                   <p className="text-muted-foreground">{process.description}</p>
                 </div>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Location */}
-        <section className="py-24 lg:py-32 bg-secondary/20 border-t border-border/30">
-          <div className="container mx-auto px-6 lg:px-12">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
-                  Visit Us
-                </p>
-                <h2 className="font-display text-4xl md:text-5xl text-foreground mb-8">
-                  Our Workshop
-                </h2>
-                <p className="text-muted-foreground leading-relaxed mb-8">
-                  Experience the art of candle making firsthand at our workshop in Mumbai. 
-                  Book a visit to see our artisans at work and discover the stories behind 
-                  each fragrance in our collection.
-                </p>
-                <div className="flex items-start gap-4">
-                  <MapPin className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                  <div>
-                    <p className="text-foreground font-medium">Scentora Workshop</p>
-                    <p className="text-muted-foreground text-sm">
-                      123 Artisan Lane, Bandra West<br />
-                      Mumbai, Maharashtra 400050
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="aspect-video bg-secondary/50 flex items-center justify-center border border-border/30">
-                <div className="text-center">
-                  <Flame className="w-12 h-12 text-primary mx-auto mb-4" />
-                  <p className="text-muted-foreground text-sm">Workshop visits by appointment</p>
-                </div>
-              </div>
             </div>
           </div>
         </section>
