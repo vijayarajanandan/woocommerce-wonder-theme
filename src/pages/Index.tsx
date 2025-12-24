@@ -10,6 +10,7 @@ import { useRef } from "react";
 // Import product images for banners
 import sakuraDream1 from "@/assets/products/sakura-dream-1-enhanced.jpg";
 import coffeeEmber1 from "@/assets/products/coffee-ember-1-enhanced.jpg";
+import coffeeEmber2 from "@/assets/products/coffee-ember-2-enhanced.jpg";
 import lavenderWhisper1 from "@/assets/products/lavender-whisper-1-enhanced.jpg";
 import autumnSpice1 from "@/assets/products/autumn-spice-1-enhanced.jpg";
 
@@ -47,9 +48,9 @@ const Index = () => {
           {/* Background */}
           <div className="absolute inset-0 luxury-gradient" />
           <div 
-            className="absolute inset-0 opacity-30"
+            className="absolute inset-0 opacity-40"
             style={{
-              backgroundImage: `url(${sakuraDream1})`,
+              backgroundImage: `url(${coffeeEmber2})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
