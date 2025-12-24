@@ -1,15 +1,32 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Minus, Trash2, ShoppingBag, ArrowLeft, ArrowRight, Truck } from "lucide-react";
+import { PromoCodeInput } from "@/components/cart/PromoCodeInput";
 
 const Cart = () => {
   const { items, subtotal, itemCount, removeItem, updateQuantity } = useCart();
+  const [promoCode, setPromoCode] = useState<string | null>(null);
+  const [discount, setDiscount] = useState(0);
 
   const shippingCost = subtotal >= 2000 ? 0 : 99;
-  const total = subtotal + shippingCost;
+  
+  // Calculate discount amount (assuming percentage discount for now)
+  const discountAmount = promoCode ? Math.round(subtotal * (discount / 100)) : 0;
+  const total = subtotal - discountAmount + shippingCost;
+
+  const handleApplyPromo = (discountPercent: number, code: string) => {
+    setDiscount(discountPercent);
+    setPromoCode(code);
+  };
+
+  const handleRemovePromo = () => {
+    setDiscount(0);
+    setPromoCode(null);
+  };
 
   if (items.length === 0) {
     return (
@@ -144,6 +161,23 @@ const Cart = () => {
               </div>
 
               <Separator className="bg-border/30 mb-6" />
+
+              {/* Promo Code */}
+              <div className="mb-6">
+                <PromoCodeInput
+                  onApply={handleApplyPromo}
+                  onRemove={handleRemovePromo}
+                  appliedCode={promoCode}
+                  discount={discount}
+                />
+              </div>
+
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm mb-4">
+                  <span className="text-primary">Discount ({promoCode})</span>
+                  <span className="text-primary">-{formatPrice(discountAmount)}</span>
+                </div>
+              )}
 
               <div className="flex justify-between mb-6">
                 <span className="font-display text-lg text-foreground">Total</span>
