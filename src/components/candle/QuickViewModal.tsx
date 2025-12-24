@@ -37,11 +37,11 @@ export const QuickViewModal = ({ candle, open, onOpenChange }: QuickViewModalPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-[95vw] sm:max-w-lg md:max-w-4xl p-0 gap-0 overflow-hidden max-h-[90vh] overflow-y-auto">
         <DialogTitle className="sr-only">{candle.name} - Quick View</DialogTitle>
-        <div className="grid md:grid-cols-2">
+        <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Image */}
-          <div className="relative aspect-square md:aspect-auto bg-secondary/30">
+          <div className="relative aspect-[4/3] md:aspect-auto bg-secondary/30">
             <img
               src={candle.images[selectedImage]}
               alt={candle.name}
@@ -64,9 +64,9 @@ export const QuickViewModal = ({ candle, open, onOpenChange }: QuickViewModalPro
           </div>
 
           {/* Details */}
-          <div className="p-6 md:p-8 flex flex-col">
+          <div className="p-4 sm:p-6 md:p-8 flex flex-col">
             {/* Badges */}
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
               {candle.bestseller && (
                 <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.1em] bg-background border border-primary/30 text-foreground px-2.5 py-1 font-medium rounded-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -80,41 +80,41 @@ export const QuickViewModal = ({ candle, open, onOpenChange }: QuickViewModalPro
               )}
             </div>
 
-            <p className="text-[10px] uppercase tracking-[0.3em] text-primary mb-2 font-medium">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-primary mb-1 md:mb-2 font-medium">
               {candle.collection}
             </p>
-            <h2 className="font-display text-2xl md:text-3xl text-foreground mb-2">
+            <h2 className="font-display text-xl sm:text-2xl md:text-3xl text-foreground mb-1 md:mb-2">
               {candle.name}
             </h2>
-            <p className="text-muted-foreground italic mb-4">
+            <p className="text-muted-foreground italic text-sm mb-3 md:mb-4">
               {candle.tagline}
             </p>
 
             {/* Price */}
-            <div className="flex items-baseline gap-3 mb-6">
-              <span className="font-display text-2xl text-foreground">{formatPrice(candle.price)}</span>
+            <div className="flex items-baseline gap-3 mb-4 md:mb-6">
+              <span className="font-display text-xl md:text-2xl text-foreground">{formatPrice(candle.price)}</span>
               {candle.regularPrice && (
-                <span className="text-lg text-muted-foreground line-through">{formatPrice(candle.regularPrice)}</span>
+                <span className="text-base md:text-lg text-muted-foreground line-through">{formatPrice(candle.regularPrice)}</span>
               )}
             </div>
 
-            {/* Description */}
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6 line-clamp-3">
+            {/* Description - hidden on mobile for space */}
+            <p className="hidden sm:block text-sm text-muted-foreground leading-relaxed mb-4 md:mb-6 line-clamp-3">
               {candle.description}
             </p>
 
             {/* Fragrance Notes Preview */}
-            <div className="mb-6 text-sm">
+            <div className="mb-4 md:mb-6 text-sm">
               <span className="text-muted-foreground">Notes: </span>
               <span className="text-foreground">
                 {[...candle.fragranceNotes.top, ...candle.fragranceNotes.heart.slice(0, 1)].join(", ")}
               </span>
             </div>
 
-            <div className="mt-auto space-y-4">
+            <div className="mt-auto space-y-3 md:space-y-4">
               {/* Quantity & Add to Cart */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center border border-border/50">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="flex items-center justify-center border border-border/50 w-full sm:w-auto">
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -133,31 +133,33 @@ export const QuickViewModal = ({ candle, open, onOpenChange }: QuickViewModalPro
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
-                <Button
-                  className="flex-1"
-                  onClick={handleAddToCart}
-                  disabled={candle.stockStatus === 'outofstock'}
-                >
-                  <ShoppingBag className="h-4 w-4 mr-2" />
-                  {candle.stockStatus === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleToggleWishlist}
-                  className={cn(
-                    "h-10 w-10 shrink-0",
-                    inWishlist && "text-primary border-primary/50 hover:text-primary"
-                  )}
-                >
-                  <Heart className={cn("h-4 w-4", inWishlist && "fill-current")} />
-                </Button>
+                <div className="flex gap-2 sm:flex-1">
+                  <Button
+                    className="flex-1"
+                    onClick={handleAddToCart}
+                    disabled={candle.stockStatus === 'outofstock'}
+                  >
+                    <ShoppingBag className="h-4 w-4 mr-2" />
+                    {candle.stockStatus === 'outofstock' ? 'Out of Stock' : 'Add to Cart'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleToggleWishlist}
+                    className={cn(
+                      "h-10 w-10 shrink-0",
+                      inWishlist && "text-primary border-primary/50 hover:text-primary"
+                    )}
+                  >
+                    <Heart className={cn("h-4 w-4", inWishlist && "fill-current")} />
+                  </Button>
+                </div>
               </div>
 
               {/* View Full Details */}
               <Button
                 variant="ghost"
-                className="w-full text-muted-foreground hover:text-foreground"
+                className="w-full text-muted-foreground hover:text-foreground text-sm"
                 asChild
               >
                 <Link to={`/shop/${candle.slug}`} onClick={() => onOpenChange(false)}>
