@@ -202,18 +202,20 @@ const CandleDetail = () => {
                       </div>
                     </div>
 
-                    {/* Desktop layout (single box) */}
-                    <div className="hidden lg:block border border-border/20 bg-secondary/20">
-                      <div className="grid grid-cols-3">
-                        <div className="p-5 text-center">
-                          <p className="text-[10px] uppercase tracking-[0.15em] text-primary/80 mb-2">Top</p>
-                          <p className="text-sm text-foreground leading-snug">{candle.fragranceNotes.top.join(", ")}</p>
-                        </div>
-                        <div className="p-5 text-center border-l border-border/20">
+                    {/* Desktop layout (single box with TOP at top) */}
+                    <div className="hidden lg:block border border-border/20 bg-secondary/20 p-6">
+                      {/* Top notes first */}
+                      <div className="text-center mb-4 pb-4 border-b border-border/20">
+                        <p className="text-[10px] uppercase tracking-[0.15em] text-primary mb-2">Top</p>
+                        <p className="text-base text-foreground leading-snug">{candle.fragranceNotes.top.join(", ")}</p>
+                      </div>
+                      {/* Heart and Base below */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
                           <p className="text-[10px] uppercase tracking-[0.15em] text-primary/80 mb-2">Heart</p>
                           <p className="text-sm text-foreground leading-snug">{candle.fragranceNotes.heart.join(", ")}</p>
                         </div>
-                        <div className="p-5 text-center border-l border-border/20">
+                        <div className="text-center border-l border-border/20 pl-4">
                           <p className="text-[10px] uppercase tracking-[0.15em] text-primary/80 mb-2">Base</p>
                           <p className="text-sm text-foreground leading-snug">{candle.fragranceNotes.base.join(", ")}</p>
                         </div>
@@ -223,7 +225,7 @@ const CandleDetail = () => {
                 </div>
 
                 {/* Product Details Grid */}
-                <div className="grid grid-cols-3 gap-2 lg:gap-3 mb-6">
+                <div className="grid grid-cols-3 gap-2 lg:gap-3 mt-6 lg:mt-8 mb-6">
                   <div className="p-3 lg:p-4 border border-border/30 text-center">
                     <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mb-1 lg:mb-2">Size</p>
                     <p className="text-foreground font-medium text-sm">{candle.weight}</p>
@@ -238,8 +240,8 @@ const CandleDetail = () => {
                   </div>
                 </div>
 
-                {/* Trust Badges */}
-                <div className="flex flex-wrap gap-4 py-4 lg:py-6 border-y border-border/30">
+                {/* Trust Badges - centered */}
+                <div className="flex flex-wrap justify-center gap-6 py-4 lg:py-6 border-y border-border/30">
                   <div className="flex items-center gap-2 text-muted-foreground"><Truck className="h-4 w-4" /><span className="text-[10px] uppercase tracking-wider">Free Ship ₹2000+</span></div>
                   <div className="flex items-center gap-2 text-muted-foreground"><RotateCcw className="h-4 w-4" /><span className="text-[10px] uppercase tracking-wider">Easy Returns</span></div>
                   <div className="flex items-center gap-2 text-muted-foreground"><Shield className="h-4 w-4" /><span className="text-[10px] uppercase tracking-wider">Secure Checkout</span></div>
