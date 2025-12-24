@@ -9,7 +9,7 @@ import { useRef } from "react";
 
 // Import product images for banners
 import coffeeEmber1 from "@/assets/products/coffee-ember-1-enhanced.jpg";
-import coffeeEmber2 from "@/assets/products/coffee-ember-2-enhanced.jpg";
+import heroBanner from "@/assets/hero-banner.jpg";
 
 // Themed collection images
 import signatureCollection from "@/assets/collections/signature-collection.jpg";
@@ -51,9 +51,9 @@ const Index = () => {
           {/* Background */}
           <div className="absolute inset-0 luxury-gradient" />
           <div 
-            className="absolute inset-0 opacity-40"
+            className="absolute inset-0 opacity-60"
             style={{
-              backgroundImage: `url(${coffeeEmber2})`,
+              backgroundImage: `url(${heroBanner})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }}
