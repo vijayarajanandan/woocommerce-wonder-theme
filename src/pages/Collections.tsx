@@ -48,7 +48,8 @@ const Collections = () => {
             <div className="mb-8">
               <Link
                 to={`/shop?collection=${collections[0].slug}`}
-                className="group relative block aspect-[21/9] overflow-hidden rounded-lg opacity-0 animate-fade-in"
+                className="group relative block overflow-hidden rounded-lg opacity-0 animate-fade-in aspect-[4/5] sm:aspect-[16/9] lg:aspect-[21/9]"
+                style={{ animationFillMode: "forwards" }}
               >
                 <img
                   src={collectionImages[collections[0].slug] || collections[0].image}
@@ -57,12 +58,12 @@ const Collections = () => {
                 />
                 <div className="absolute inset-0 bg-background/50" />
                 <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-background/30" />
-                <div className="absolute inset-0 flex items-center">
-                  <div className="p-8 md:p-12 max-w-xl">
+                <div className="absolute inset-0 flex items-end lg:items-center">
+                  <div className="p-6 sm:p-8 md:p-12 max-w-xl">
                     <p className="text-[10px] uppercase tracking-[0.3em] text-primary mb-3">
                       Featured Collection
                     </p>
-                    <h2 className="font-display text-4xl md:text-5xl text-foreground group-hover:text-primary transition-colors duration-300 mb-4">
+                    <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-foreground group-hover:text-primary transition-colors duration-300 mb-4">
                       {collections[0].name}
                     </h2>
                     <p className="text-muted-foreground mb-2">
