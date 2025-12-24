@@ -1,16 +1,26 @@
 import { Candle, Collection } from "@/types/candle";
 
-// Product images
-import sakuraDream1 from "@/assets/products/sakura-dream-1.jpg";
-import sakuraDream2 from "@/assets/products/sakura-dream-2.jpg";
-import seasideSerenity1 from "@/assets/products/seaside-serenity-1.jpg";
-import seasideSerenity2 from "@/assets/products/seaside-serenity-2.jpg";
-import springMorning1 from "@/assets/products/spring-morning-1.jpg";
-import springMorning2 from "@/assets/products/spring-morning-2.jpg";
-import lavenderWhisper1 from "@/assets/products/lavender-whisper-1.jpg";
-import lavenderWhisper2 from "@/assets/products/lavender-whisper-2.jpg";
-import coffeeEmber1 from "@/assets/products/coffee-ember-1.jpg";
-import coffeeEmber2 from "@/assets/products/coffee-ember-2.jpg";
+// Enhanced product images
+import sakuraDream1 from "@/assets/products/sakura-dream-1-enhanced.jpg";
+import sakuraDream2 from "@/assets/products/sakura-dream-2-enhanced.jpg";
+import seasideSerenity1 from "@/assets/products/seaside-serenity-1-enhanced.jpg";
+import seasideSerenity2 from "@/assets/products/seaside-serenity-2-enhanced.jpg";
+import springMorning1 from "@/assets/products/spring-morning-1-enhanced.jpg";
+import springMorning2 from "@/assets/products/spring-morning-2-enhanced.jpg";
+import lavenderWhisper1 from "@/assets/products/lavender-whisper-1-enhanced.jpg";
+import lavenderWhisper2 from "@/assets/products/lavender-whisper-2-enhanced.jpg";
+import coffeeEmber1 from "@/assets/products/coffee-ember-1-enhanced.jpg";
+import coffeeEmber2 from "@/assets/products/coffee-ember-2-enhanced.jpg";
+import midnightJasmine1 from "@/assets/products/midnight-jasmine-1-enhanced.jpg";
+import midnightJasmine2 from "@/assets/products/midnight-jasmine-2-enhanced.jpg";
+import forestPine1 from "@/assets/products/forest-pine-1-enhanced.jpg";
+import forestPine2 from "@/assets/products/forest-pine-2-enhanced.jpg";
+import vanillaSunrise1 from "@/assets/products/vanilla-sunrise-1-enhanced.jpg";
+import vanillaSunrise2 from "@/assets/products/vanilla-sunrise-2-enhanced.jpg";
+import oceanBreeze1 from "@/assets/products/ocean-breeze-1-enhanced.jpg";
+import oceanBreeze2 from "@/assets/products/ocean-breeze-2-enhanced.jpg";
+import autumnSpice1 from "@/assets/products/autumn-spice-1-enhanced.jpg";
+import autumnSpice2 from "@/assets/products/autumn-spice-2-enhanced.jpg";
 
 export const collections: Collection[] = [
   {
@@ -39,7 +49,7 @@ export const collections: Collection[] = [
     name: "Limited Edition",
     slug: "limited",
     description: "Exclusive seasonal blend – Cinnamon Brew, our signature fusion",
-    image: springMorning1,
+    image: autumnSpice1,
   },
 ];
 
@@ -102,7 +112,7 @@ export const candles: Candle[] = [
       heart: ["Vanilla Bean", "Honey", "Clove"],
       base: ["Tonka Bean", "Amber", "Warm Musk"],
     },
-    images: [coffeeEmber2, coffeeEmber1],
+    images: [forestPine1, forestPine2],
     collection: "Signature Collection",
     size: "6 oz",
     weight: "170g",
@@ -146,7 +156,7 @@ export const candles: Candle[] = [
       heart: ["Cinnamon", "Apple Cider", "Clove"],
       base: ["Maple", "Vanilla", "Warm Woods"],
     },
-    images: [springMorning2, springMorning1],
+    images: [vanillaSunrise1, vanillaSunrise2],
     collection: "Signature Collection",
     size: "6 oz",
     weight: "170g",
@@ -190,7 +200,7 @@ export const candles: Candle[] = [
       heart: ["Rose", "Violet", "Iris"],
       base: ["Antique Wood", "Leather", "Powder"],
     },
-    images: [sakuraDream2, lavenderWhisper1],
+    images: [midnightJasmine1, midnightJasmine2],
     collection: "Noir Collection",
     size: "6 oz",
     weight: "170g",
@@ -212,7 +222,7 @@ export const candles: Candle[] = [
       heart: ["Dark Rose", "Jasmine", "Geranium"],
       base: ["Oud", "Patchouli", "Dark Musk"],
     },
-    images: [lavenderWhisper2, sakuraDream1],
+    images: [oceanBreeze1, oceanBreeze2],
     collection: "Noir Collection",
     size: "6 oz",
     weight: "170g",
@@ -256,7 +266,7 @@ export const candles: Candle[] = [
       heart: ["Roasted Coffee", "Caramel", "Clove"],
       base: ["Brown Sugar", "Vanilla", "Toasted Woods"],
     },
-    images: [seasideSerenity2, coffeeEmber2],
+    images: [autumnSpice1, autumnSpice2],
     collection: "Limited Edition",
     size: "6 oz",
     weight: "170g",
