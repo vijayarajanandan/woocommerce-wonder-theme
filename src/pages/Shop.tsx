@@ -32,7 +32,7 @@ const Shop = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-[137px]">
         {/* Hero */}
         <section className="relative py-20 lg:py-28 text-center border-b border-border/30 overflow-hidden">
           <div 
@@ -58,7 +58,7 @@ const Shop = () => {
         </section>
 
         {/* Filters */}
-        <section className="py-6 border-b border-border/30 bg-secondary/10 sticky top-20 z-40 backdrop-blur-sm">
+        <section className="py-6 border-b border-border/30 bg-secondary/10 sticky top-[137px] z-40 backdrop-blur-sm">
           <div className="container mx-auto px-6 lg:px-12">
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button

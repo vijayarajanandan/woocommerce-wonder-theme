@@ -10,6 +10,8 @@ import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
 import { CandleCard } from "@/components/candle/CandleCard";
 import { formatPrice } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { ImageZoom } from "@/components/ui/image-zoom";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -47,7 +49,7 @@ const CandleDetail = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-[137px]">
         <div className="container mx-auto px-6 lg:px-12 py-12">
           {/* Breadcrumb */}
           <Link 
@@ -60,32 +62,34 @@ const CandleDetail = () => {
 
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
             {/* Images */}
-            <div className="space-y-4">
-              <div className="aspect-[3/4] bg-secondary/30 overflow-hidden">
-                <img
+            <ScrollReveal direction="left">
+              <div className="space-y-4">
+                <ImageZoom
                   src={candle.images[selectedImage]}
                   alt={candle.name}
-                  className="w-full h-full object-cover"
+                  className="aspect-[3/4] bg-secondary/30"
+                  zoomScale={2.5}
                 />
+                {candle.images.length > 1 && (
+                  <div className="flex gap-3">
+                    {candle.images.map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedImage(i)}
+                        className={`w-20 h-24 overflow-hidden border-2 transition-colors ${
+                          selectedImage === i ? "border-primary" : "border-border/50 hover:border-border"
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              {candle.images.length > 1 && (
-                <div className="flex gap-3">
-                  {candle.images.map((img, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setSelectedImage(i)}
-                      className={`w-20 h-24 overflow-hidden border-2 transition-colors ${
-                        selectedImage === i ? "border-primary" : "border-border/50 hover:border-border"
-                      }`}
-                    >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            </ScrollReveal>
 
             {/* Details */}
+            <ScrollReveal direction="right" delay={100}>
             <div className="lg:py-4">
               {/* Sleek Badges */}
               <div className="flex flex-wrap gap-2 mb-6">
@@ -223,6 +227,7 @@ const CandleDetail = () => {
                 </div>
               </div>
             </div>
+            </ScrollReveal>
           </div>
         </div>
 
