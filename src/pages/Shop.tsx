@@ -5,6 +5,7 @@ import { CandleCard } from "@/components/candle/CandleCard";
 import { candles, collections, getBestsellers, getCandlesByCollection } from "@/data/candles";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import shopBanner from "@/assets/shop-banner.jpg";
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -33,8 +34,17 @@ const Shop = () => {
       <Header />
       <main className="flex-1 pt-20">
         {/* Hero */}
-        <section className="py-20 lg:py-28 text-center border-b border-border/30">
-          <div className="container mx-auto px-6 lg:px-12">
+        <section className="relative py-20 lg:py-28 text-center border-b border-border/30 overflow-hidden">
+          <div 
+            className="absolute inset-0 opacity-40"
+            style={{
+              backgroundImage: `url(${shopBanner})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/30 to-background" />
+          <div className="container mx-auto px-6 lg:px-12 relative z-10">
             <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium opacity-0 animate-fade-in">
               Shop
             </p>

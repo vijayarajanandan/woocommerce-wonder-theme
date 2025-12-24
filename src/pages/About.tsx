@@ -4,6 +4,7 @@ import { Heart, Leaf, Award, Users } from "lucide-react";
 
 // Import product images
 import lavenderWhisper2 from "@/assets/products/lavender-whisper-2-enhanced.jpg";
+import aboutBanner from "@/assets/about-banner.jpg";
 
 const About = () => {
   return (
@@ -13,7 +14,15 @@ const About = () => {
       <main className="flex-1 pt-20">
         {/* Hero */}
         <section className="relative py-24 lg:py-32 overflow-hidden">
-          <div className="absolute inset-0 luxury-gradient opacity-50" />
+          <div 
+            className="absolute inset-0 opacity-50"
+            style={{
+              backgroundImage: `url(${aboutBanner})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
           <div className="container mx-auto px-6 lg:px-12 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
