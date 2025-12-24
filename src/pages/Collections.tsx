@@ -1,17 +1,22 @@
 import { Link } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { collections } from "@/data/candles";
+import { collections, candles } from "@/data/candles";
 import { ArrowRight } from "lucide-react";
 
 const Collections = () => {
+  // Get product count per collection
+  const getProductCount = (collectionName: string) => {
+    return candles.filter((c) => c.collection === collectionName).length;
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
       <main className="flex-1 pt-20">
         {/* Hero */}
-        <section className="py-24 lg:py-32">
+        <section className="py-16 lg:py-24">
           <div className="container mx-auto px-6 lg:px-12">
             <div className="max-w-3xl mx-auto text-center mb-16">
               <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
@@ -26,32 +31,68 @@ const Collections = () => {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
-              {collections.map((collection, index) => (
+            {/* Featured Collection - First one larger */}
+            <div className="mb-8">
+              <Link
+                to={`/shop?collection=${collections[0].slug}`}
+                className="group relative block aspect-[21/9] overflow-hidden rounded-lg opacity-0 animate-fade-in"
+              >
+                <img
+                  src={collections[0].image}
+                  alt={collections[0].name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-background via-background/60 to-transparent" />
+                <div className="absolute inset-0 flex items-center">
+                  <div className="p-8 md:p-12 max-w-xl">
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-primary mb-3">
+                      Featured Collection
+                    </p>
+                    <h2 className="font-display text-4xl md:text-5xl text-foreground group-hover:text-primary transition-colors duration-300 mb-4">
+                      {collections[0].name}
+                    </h2>
+                    <p className="text-muted-foreground mb-2">
+                      {collections[0].description}
+                    </p>
+                    <p className="text-sm text-primary/80 mb-6">
+                      {getProductCount(collections[0].name)} Products
+                    </p>
+                    <span className="inline-flex items-center text-xs uppercase tracking-[0.15em] text-primary group-hover:gap-3 gap-2 transition-all">
+                      Shop Collection
+                      <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+
+            {/* Other Collections Grid */}
+            <div className="grid md:grid-cols-3 gap-6">
+              {collections.slice(1).map((collection, index) => (
                 <Link
                   key={collection.id}
                   to={`/shop?collection=${collection.slug}`}
-                  className="group relative aspect-[4/5] overflow-hidden opacity-0 animate-fade-in"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="group relative aspect-[3/4] overflow-hidden rounded-lg opacity-0 animate-fade-in"
+                  style={{ animationDelay: `${(index + 1) * 100}ms`, animationFillMode: 'forwards' }}
                 >
                   <img
                     src={collection.image}
                     alt={collection.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-8">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-primary mb-2">
-                      Collection
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <p className="text-[9px] uppercase tracking-[0.3em] text-primary mb-2">
+                      {getProductCount(collection.name)} Products
                     </p>
-                    <h2 className="font-display text-3xl md:text-4xl text-foreground group-hover:text-primary transition-colors duration-300 mb-3">
+                    <h2 className="font-display text-2xl md:text-3xl text-foreground group-hover:text-primary transition-colors duration-300 mb-2">
                       {collection.name}
                     </h2>
-                    <p className="text-muted-foreground mb-4">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {collection.description}
                     </p>
                     <span className="inline-flex items-center text-xs uppercase tracking-[0.15em] text-primary group-hover:gap-3 gap-2 transition-all">
-                      Explore Collection
+                      Explore
                       <ArrowRight className="w-4 h-4" />
                     </span>
                   </div>
