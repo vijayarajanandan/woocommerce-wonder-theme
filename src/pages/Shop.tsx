@@ -5,12 +5,18 @@ import { Footer } from "@/components/layout/Footer";
 import { CandleCard } from "@/components/candle/CandleCard";
 import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/shop/ProductFilters";
+import { Skeleton } from "@/components/ui/skeleton";
 import shopBanner from "@/assets/shop-banner.jpg";
 
+// WooCommerce hooks
+import { useProducts, useCategories } from "@/hooks/useWooCommerce";
+import { isWooCommerceConfigured } from "@/lib/woocommerce";
+
+// Fallback static data
 import { 
-  candles, 
-  collections, 
-  getBestsellers,
+  candles as staticCandles, 
+  collections as staticCollections, 
+  getBestsellers as getStaticBestsellers,
   getMinMaxPrice,
 } from "@/data/candles";
 
@@ -26,6 +32,15 @@ const defaultFilters: FilterState = {
   onSale: false,
 };
 
+// Loading skeleton for products
+const ProductSkeleton = () => (
+  <div className="space-y-4">
+    <Skeleton className="aspect-square w-full rounded-lg" />
+    <Skeleton className="h-4 w-3/4" />
+    <Skeleton className="h-4 w-1/2" />
+  </div>
+);
+
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const collectionSlug = searchParams.get("collection");
@@ -39,10 +54,19 @@ const Shop = () => {
     return initial;
   });
 
-  // Use static data
-  const allCandles = candles;
-  const bestsellers = getBestsellers();
-  const displayCollections = collections;
+  // Check if WooCommerce is configured
+  const wcConfigured = isWooCommerceConfigured();
+
+  // Fetch from WooCommerce if configured
+  const { data: wcData, isLoading: productsLoading } = useProducts({ per_page: 100 });
+  const { data: wcCategories, isLoading: categoriesLoading } = useCategories();
+
+  // Use WooCommerce data if available, otherwise fallback to static
+  const allCandles = wcConfigured && wcData?.candles ? wcData.candles : staticCandles;
+  const displayCollections = wcConfigured && wcCategories ? wcCategories : staticCollections;
+  const bestsellers = allCandles.filter(c => c.bestseller);
+
+  const isLoading = wcConfigured && (productsLoading || categoriesLoading);
 
   // Calculate min/max price from actual data
   const { minPrice, maxPrice } = useMemo(() => {
@@ -207,10 +231,17 @@ const Shop = () => {
 
               {/* Products */}
               <div className="flex-1">
-                {displayCandles.length > 0 ? (
+                {isLoading ? (
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
+                    {[...Array(6)].map((_, i) => (
+                      <ProductSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : displayCandles.length > 0 ? (
                   <>
                     <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
                       {displayCandles.length} {displayCandles.length === 1 ? 'product' : 'products'}
+                      {wcConfigured && <span className="ml-2 text-primary">• Live from store</span>}
                     </p>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
                       {displayCandles.map((candle, index) => (
