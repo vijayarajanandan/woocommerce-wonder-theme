@@ -102,7 +102,7 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
           </div>
 
           {/* Sleek Badges */}
-          {(candle.bestseller || candle.onSale || candle.stockStatus === 'limited') && (
+          {(candle.bestseller || candle.onSale) && (
             <div className="absolute top-3 left-3 flex flex-col gap-1.5">
               {candle.bestseller && (
                 <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] bg-background/90 backdrop-blur-sm text-foreground px-2.5 py-1 font-medium border border-primary/30 rounded-sm">
@@ -113,11 +113,6 @@ export const CandleCard = ({ candle, className, index = 0 }: CandleCardProps) =>
               {candle.onSale && candle.regularPrice && (
                 <span className="inline-flex items-center text-[10px] uppercase tracking-[0.08em] bg-primary/90 backdrop-blur-sm text-primary-foreground px-2.5 py-1 font-medium rounded-sm">
                   {Math.round(((candle.regularPrice - candle.price) / candle.regularPrice) * 100)}% Off
-                </span>
-              )}
-              {candle.stockStatus === 'limited' && !candle.onSale && !candle.bestseller && (
-                <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] bg-background/90 backdrop-blur-sm text-muted-foreground px-2.5 py-1 font-medium border border-border/50 rounded-sm">
-                  Limited
                 </span>
               )}
             </div>
