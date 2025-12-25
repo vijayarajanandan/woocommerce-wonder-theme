@@ -1,15 +1,3 @@
-/**
- * Shop Page - WooCommerce Enabled
- * 
- * This version automatically uses WooCommerce when configured,
- * or falls back to static data during development.
- * 
- * Changes from original:
- * 1. Added useProducts hook for WooCommerce data
- * 2. Added loading states
- * 3. Kept all original UI exactly the same
- */
-
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
@@ -17,18 +5,14 @@ import { Footer } from "@/components/layout/Footer";
 import { CandleCard } from "@/components/candle/CandleCard";
 import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/shop/ProductFilters";
-import { Skeleton } from "@/components/ui/skeleton";
 import shopBanner from "@/assets/shop-banner.jpg";
 
-// Import both static data and WooCommerce hooks
 import { 
-  candles as staticCandles, 
+  candles, 
   collections, 
-  getBestsellers as getStaticBestsellers,
+  getBestsellers,
   getMinMaxPrice,
-  isWooCommerceEnabled,
 } from "@/data/candles";
-import { useProducts, useBestsellers, useCategories } from "@/hooks/useWooCommerce";
 
 // Get price range for filters
 const { min: defaultMinPrice, max: defaultMaxPrice } = getMinMaxPrice();
@@ -41,15 +25,6 @@ const defaultFilters: FilterState = {
   inStock: false,
   onSale: false,
 };
-
-// Loading skeleton for product cards
-const ProductSkeleton = () => (
-  <div className="space-y-4">
-    <Skeleton className="aspect-[3/4] w-full" />
-    <Skeleton className="h-4 w-3/4" />
-    <Skeleton className="h-4 w-1/2" />
-  </div>
-);
 
 const Shop = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,45 +39,10 @@ const Shop = () => {
     return initial;
   });
 
-  // Fetch data from WooCommerce if configured
-  const isWC = isWooCommerceEnabled();
-  
-  const { 
-    data: wcProductsData, 
-    isLoading: isLoadingProducts,
-    error: productsError,
-  } = useProducts({ per_page: 100 });
-  
-  const { 
-    data: wcBestsellers, 
-    isLoading: isLoadingBestsellers,
-  } = useBestsellers();
-  
-  const { 
-    data: wcCategories,
-  } = useCategories();
-
-  // Use WooCommerce data if available, otherwise use static
-  const allCandles = useMemo(() => {
-    if (isWC && wcProductsData?.candles) {
-      return wcProductsData.candles;
-    }
-    return staticCandles;
-  }, [isWC, wcProductsData]);
-
-  const bestsellers = useMemo(() => {
-    if (isWC && wcBestsellers) {
-      return wcBestsellers;
-    }
-    return getStaticBestsellers();
-  }, [isWC, wcBestsellers]);
-
-  const displayCollections = useMemo(() => {
-    if (isWC && wcCategories) {
-      return wcCategories;
-    }
-    return collections;
-  }, [isWC, wcCategories]);
+  // Use static data
+  const allCandles = candles;
+  const bestsellers = getBestsellers();
+  const displayCollections = collections;
 
   // Calculate min/max price from actual data
   const { minPrice, maxPrice } = useMemo(() => {
@@ -191,8 +131,6 @@ const Shop = () => {
     }
   };
 
-  const isLoading = isWC && (isLoadingProducts || (showBestsellers && isLoadingBestsellers));
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -269,23 +207,10 @@ const Shop = () => {
 
               {/* Products */}
               <div className="flex-1">
-                {/* Loading State */}
-                {isLoading ? (
-                  <>
-                    <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
-                      Loading products...
-                    </p>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
-                      {[...Array(6)].map((_, i) => (
-                        <ProductSkeleton key={i} />
-                      ))}
-                    </div>
-                  </>
-                ) : displayCandles.length > 0 ? (
+                {displayCandles.length > 0 ? (
                   <>
                     <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
                       {displayCandles.length} {displayCandles.length === 1 ? 'product' : 'products'}
-                      {isWC && <span className="ml-2 text-primary">(Live from store)</span>}
                     </p>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
                       {displayCandles.map((candle, index) => (
@@ -300,13 +225,6 @@ const Shop = () => {
                     <Button onClick={clearFilters} variant="gold">
                       Clear Filters
                     </Button>
-                  </div>
-                )}
-
-                {/* Error State */}
-                {productsError && (
-                  <div className="text-center py-8 text-destructive">
-                    <p>Error loading products. Using cached data.</p>
                   </div>
                 )}
               </div>
