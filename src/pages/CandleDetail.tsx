@@ -1,17 +1,9 @@
-/**
- * Candle Detail Page - WooCommerce Enabled
- * 
- * Uses WooCommerce hooks with fallback to static data.
- * All original UI preserved exactly.
- */
-
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, Flame, Truck, RotateCcw, Shield, Heart } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRecentlyViewed } from "@/context/RecentlyViewedContext";
@@ -24,35 +16,7 @@ import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { RecentlyViewed } from "@/components/candle/RecentlyViewed";
 import { FloatingProductCTA } from "@/components/candle/FloatingProductCTA";
 
-// Import both static and WooCommerce data sources
-import { getCandleBySlug as getStaticCandle, getFeaturedCandles as getStaticFeatured, isWooCommerceEnabled } from "@/data/candles";
-import { useProductBySlug, useFeaturedProducts, useRelatedProducts } from "@/hooks/useWooCommerce";
-
-// Loading skeleton for the product detail
-const ProductDetailSkeleton = () => (
-  <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
-    <div className="space-y-4">
-      <Skeleton className="aspect-[3/4] w-full" />
-      <div className="flex gap-3">
-        <Skeleton className="w-20 h-24" />
-        <Skeleton className="w-20 h-24" />
-        <Skeleton className="w-20 h-24" />
-      </div>
-    </div>
-    <div className="space-y-6">
-      <Skeleton className="h-6 w-32" />
-      <Skeleton className="h-12 w-3/4" />
-      <Skeleton className="h-6 w-full" />
-      <Skeleton className="h-10 w-40" />
-      <Skeleton className="h-24 w-full" />
-      <div className="flex gap-4">
-        <Skeleton className="h-12 w-32" />
-        <Skeleton className="h-12 flex-1" />
-        <Skeleton className="h-12 w-12" />
-      </div>
-    </div>
-  </div>
-);
+import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
 
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -64,32 +28,11 @@ const CandleDetail = () => {
   const alsoLikeScrollRef = useRef<HTMLDivElement>(null);
   const addToCartRef = useRef<HTMLButtonElement>(null);
 
-  // Check if WooCommerce is enabled
-  const isWC = isWooCommerceEnabled();
-
-  // Fetch from WooCommerce if enabled
-  const { 
-    data: wcCandle, 
-    isLoading: isLoadingWC,
-    error: wcError,
-  } = useProductBySlug(slug);
+  // Get candle data
+  const candle = getCandleBySlug(slug || "");
   
-  const { 
-    data: wcFeatured,
-    isLoading: isLoadingRelated,
-  } = useFeaturedProducts(4);
-
-  // Use WooCommerce data if available, otherwise static
-  const candle = isWC && wcCandle ? wcCandle : getStaticCandle(slug || "");
-  const isLoading = isWC && isLoadingWC;
-
   // Get related candles
-  const relatedCandles = (() => {
-    if (isWC && wcFeatured) {
-      return wcFeatured.filter(c => c.slug !== slug).slice(0, 3);
-    }
-    return getStaticFeatured().filter(c => c.slug !== slug).slice(0, 3);
-  })();
+  const relatedCandles = getFeaturedCandles().filter(c => c.slug !== slug).slice(0, 3);
 
   const scroll = (direction: 'left' | 'right') => {
     if (alsoLikeScrollRef.current) {
@@ -113,22 +56,6 @@ const CandleDetail = () => {
     setSelectedImage(0);
     setQuantity(1);
   }, [slug]);
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Header />
-        <main className="flex-1 pt-[137px]">
-          <div className="container mx-auto px-6 lg:px-12 py-12">
-            <Skeleton className="h-4 w-32 mb-10" />
-            <ProductDetailSkeleton />
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   // Not found state
   if (!candle) {
@@ -204,11 +131,6 @@ const CandleDetail = () => {
                   {candle.onSale && candle.regularPrice && (
                     <span className="inline-flex items-center text-[10px] uppercase tracking-[0.08em] bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 font-medium rounded-sm">
                       Save {Math.round(((candle.regularPrice - candle.price) / candle.regularPrice) * 100)}%
-                    </span>
-                  )}
-                  {isWC && (
-                    <span className="inline-flex items-center text-[10px] uppercase tracking-[0.08em] bg-green-500/10 border border-green-500/20 text-green-500 px-3 py-1.5 font-medium rounded-sm">
-                      Live Stock
                     </span>
                   )}
                 </div>
