@@ -155,7 +155,7 @@ export function wcProductToCandle(product: WCProduct): Candle {
     collection: getCollection(product),
     price: price,
     regularPrice: product.on_sale && regularPrice ? regularPrice : undefined,
-    tagline: getMeta(product, '_tagline') || getMeta(product, 'tagline') || stripHtml(product.description || '').slice(0, 100) || '',
+    tagline: getMeta(product, '_tagline') || getMeta(product, 'tagline') || '',
     description: stripHtml(product.description || product.short_description || ''),
     images: product.images?.map(img => img.src) || [],
     fragranceNotes: parseFragranceNotes(product),
