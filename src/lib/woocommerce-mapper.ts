@@ -37,6 +37,11 @@ function getCollection(product: WCProduct): string {
   return product.categories?.[0]?.name || 'Uncategorized';
 }
 
+function getAttribute(product: WCProduct, name: string): string {
+  const attr = product.attributes?.find(a => a.name.toLowerCase() === name.toLowerCase());
+  return attr?.options?.[0] || '';
+}
+
 // Parse fragrance notes from meta fields or short description
 function parseFragranceNotes(product: WCProduct): FragranceNotes {
   // First try meta fields
@@ -155,7 +160,7 @@ export function wcProductToCandle(product: WCProduct): Candle {
     collection: getCollection(product),
     price: price,
     regularPrice: product.on_sale && regularPrice ? regularPrice : undefined,
-    tagline: getMeta(product, '_tagline') || getMeta(product, 'tagline') || '',
+    tagline: getMeta(product, '_tagline') || getAttribute(product, 'Tagline') || '',
     description: stripHtml(product.description || product.short_description || ''),
     images: product.images?.map(img => img.src) || [],
     fragranceNotes: parseFragranceNotes(product),
