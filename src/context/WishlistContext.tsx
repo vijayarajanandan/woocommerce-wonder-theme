@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Candle } from "@/types/candle";
 import { toast } from "sonner";
+import { trackWishlistAdd, trackWishlistRemove } from "@/lib/matomo";
 
 interface WishlistContextType {
   items: Candle[];
@@ -27,6 +28,13 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!items.find((item) => item.id === candle.id)) {
       setItems((prev) => [...prev, candle]);
       toast.success(`${candle.name} added to wishlist`);
+      
+      // Track wishlist add in Matomo
+      trackWishlistAdd({
+        id: candle.id,
+        name: candle.name,
+        price: candle.price,
+      });
     }
   };
 
@@ -35,6 +43,12 @@ export const WishlistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setItems((prev) => prev.filter((item) => item.id !== candleId));
     if (candle) {
       toast.success(`${candle.name} removed from wishlist`);
+      
+      // Track wishlist remove in Matomo
+      trackWishlistRemove({
+        id: candle.id,
+        name: candle.name,
+      });
     }
   };
 

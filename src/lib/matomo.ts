@@ -1,4 +1,4 @@
-// Matomo Ecommerce Tracking for Scentora
+// Matomo Ecommerce + Event Tracking for Scentora
 
 declare global {
   interface Window {
@@ -11,6 +11,8 @@ const getPaq = () => {
   window._paq = window._paq || [];
   return window._paq;
 };
+
+// ============ ECOMMERCE TRACKING ============
 
 // Track cart update (call after any cart change)
 export const trackCartUpdate = (
@@ -97,4 +99,48 @@ export const trackProductView = (product: {
     product.price,
   ]);
   _paq.push(['trackPageView']);
+};
+
+// ============ EVENT TRACKING ============
+
+// Generic event tracking
+export const trackEvent = (
+  category: string,
+  action: string,
+  name?: string,
+  value?: number
+) => {
+  const _paq = getPaq();
+  _paq.push(['trackEvent', category, action, name, value]);
+};
+
+// Track wishlist actions
+export const trackWishlistAdd = (product: { id: number; name: string; price: number }) => {
+  trackEvent('Wishlist', 'Add', product.name, product.price);
+};
+
+export const trackWishlistRemove = (product: { id: number; name: string }) => {
+  trackEvent('Wishlist', 'Remove', product.name);
+};
+
+// Track promo code
+export const trackPromoCode = (code: string, discountPercent: number, cartTotal: number) => {
+  const discountValue = Math.round(cartTotal * (discountPercent / 100));
+  trackEvent('Promo', 'Applied', code, discountValue);
+};
+
+// Track site search
+export const trackSiteSearch = (keyword: string, category?: string, resultsCount?: number) => {
+  const _paq = getPaq();
+  _paq.push(['trackSiteSearch', keyword, category || false, resultsCount || 0]);
+};
+
+// Track filter usage
+export const trackFilterUsage = (filterType: string, filterValue: string) => {
+  trackEvent('Filter', filterType, filterValue);
+};
+
+// Track payment method selection
+export const trackPaymentMethodSelected = (method: string) => {
+  trackEvent('Checkout', 'Payment Method', method);
 };

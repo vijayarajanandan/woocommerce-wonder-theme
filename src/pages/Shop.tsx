@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/shop/ProductFilters";
 import { Skeleton } from "@/components/ui/skeleton";
 import shopBanner from "@/assets/shop-banner.jpg";
+import { trackFilterUsage } from "@/lib/matomo";
 
 // WooCommerce hooks
 import { useProducts, useCategories } from "@/hooks/useWooCommerce";
@@ -143,9 +144,38 @@ const Shop = () => {
   const clearFilters = () => {
     setFilters({ ...defaultFilters, priceRange: [minPrice, maxPrice] });
     setSearchParams({});
+    
+    // Track filter clear
+    trackFilterUsage('Clear', 'All Filters');
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
+    // Track filter changes
+    if (newFilters.collections.length !== filters.collections.length) {
+      const added = newFilters.collections.filter(c => !filters.collections.includes(c));
+      const removed = filters.collections.filter(c => !newFilters.collections.includes(c));
+      added.forEach(c => trackFilterUsage('Collection', c));
+      removed.forEach(c => trackFilterUsage('Collection Removed', c));
+    }
+    
+    if (newFilters.sizes.length !== filters.sizes.length) {
+      const added = newFilters.sizes.filter(s => !filters.sizes.includes(s));
+      added.forEach(s => trackFilterUsage('Size', s));
+    }
+    
+    if (newFilters.inStock !== filters.inStock) {
+      trackFilterUsage('In Stock', newFilters.inStock ? 'Enabled' : 'Disabled');
+    }
+    
+    if (newFilters.onSale !== filters.onSale) {
+      trackFilterUsage('On Sale', newFilters.onSale ? 'Enabled' : 'Disabled');
+    }
+    
+    if (newFilters.priceRange[0] !== filters.priceRange[0] || 
+        newFilters.priceRange[1] !== filters.priceRange[1]) {
+      trackFilterUsage('Price Range', `${newFilters.priceRange[0]}-${newFilters.priceRange[1]}`);
+    }
+    
     setFilters(newFilters);
     // Update URL if single collection selected
     if (newFilters.collections.length === 1) {

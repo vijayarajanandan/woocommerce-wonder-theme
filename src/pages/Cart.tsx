@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Minus, Trash2, ShoppingBag, ArrowLeft, ArrowRight } from "lucide-react";
 import { PromoCodeInput } from "@/components/cart/PromoCodeInput";
 import scentoraLogo from "@/assets/scentora-logo.png";
+import { trackPromoCode } from "@/lib/matomo";
 
 const Cart = () => {
   const { items, subtotal, itemCount, removeItem, updateQuantity } = useCart();
@@ -20,6 +21,9 @@ const Cart = () => {
   const handleApplyPromo = (discountPercent: number, code: string) => {
     setDiscount(discountPercent);
     setPromoCode(code);
+    
+    // Track promo code in Matomo
+    trackPromoCode(code, discountPercent, subtotal);
   };
 
   const handleRemovePromo = () => {

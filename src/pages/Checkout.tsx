@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import scentoraLogo from "@/assets/scentora-logo.png";
 import { useCreateOrder } from "@/hooks/useWooCommerce";
 import { isWooCommerceConfigured } from "@/lib/woocommerce";
-import { trackOrder, trackCartUpdate } from "@/lib/matomo";
+import { trackOrder, trackCartUpdate, trackPaymentMethodSelected } from "@/lib/matomo";
 
 // Razorpay types
 declare global {
@@ -67,6 +67,11 @@ const Checkout = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cod">("razorpay");
+
+  const handlePaymentMethodChange = (method: "razorpay" | "cod") => {
+    setPaymentMethod(method);
+    trackPaymentMethodSelected(method === "razorpay" ? "Online Payment" : "Cash on Delivery");
+  };
 
   const createOrder = useCreateOrder();
 
@@ -434,7 +439,7 @@ const Checkout = () => {
                       name="paymentMethod"
                       value="razorpay"
                       checked={paymentMethod === "razorpay"}
-                      onChange={() => setPaymentMethod("razorpay")}
+                      onChange={() => handlePaymentMethodChange("razorpay")}
                       className="sr-only"
                     />
                     <div
@@ -468,7 +473,7 @@ const Checkout = () => {
                       name="paymentMethod"
                       value="cod"
                       checked={paymentMethod === "cod"}
-                      onChange={() => setPaymentMethod("cod")}
+                      onChange={() => handlePaymentMethodChange("cod")}
                       className="sr-only"
                     />
                     <div
