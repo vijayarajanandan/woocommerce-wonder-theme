@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Candle } from "@/types/candle";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -8,6 +8,7 @@ import { Minus, Plus, Heart, ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
+import { trackEvent } from "@/lib/matomo";
 
 interface QuickViewModalProps {
   candle: Candle | null;
@@ -21,12 +22,20 @@ export const QuickViewModal = ({ candle, open, onOpenChange }: QuickViewModalPro
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
+  // Track quick view open
+  useEffect(() => {
+    if (open && candle) {
+      trackEvent('Product', 'Quick View', candle.name, candle.price);
+    }
+  }, [open, candle]);
+
   if (!candle) return null;
 
   const inWishlist = isInWishlist(candle.id);
 
   const handleAddToCart = () => {
     addItem(candle, quantity);
+    trackEvent('Product', 'Add to Cart from Quick View', candle.name, candle.price * quantity);
     setQuantity(1);
     onOpenChange(false);
   };

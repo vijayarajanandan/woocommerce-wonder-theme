@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/matomo";
 
 interface ReviewMedia {
   type: 'image' | 'video';
@@ -130,6 +131,18 @@ export const ReviewSection = ({ productId, productName }: ReviewSectionProps) =>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Track review submission
+    trackEvent('Review', 'Submit', productName, newReview.rating);
+    
+    // Track if media was included
+    if (mediaFiles.length > 0) {
+      const hasImages = mediaFiles.some(f => f.type.startsWith('image'));
+      const hasVideo = mediaFiles.some(f => f.type.startsWith('video'));
+      if (hasImages) trackEvent('Review', 'Include Images', productName, mediaFiles.filter(f => f.type.startsWith('image')).length);
+      if (hasVideo) trackEvent('Review', 'Include Video', productName);
+    }
+    
     // In production, this would submit to the backend with media files
     toast.success("Review submitted!", {
       description: "Your review will be visible after moderation.",
@@ -142,7 +155,16 @@ export const ReviewSection = ({ productId, productName }: ReviewSectionProps) =>
   const handleHelpful = (reviewId: number) => {
     if (!helpfulClicked.includes(reviewId)) {
       setHelpfulClicked([...helpfulClicked, reviewId]);
+      // Track helpful click
+      trackEvent('Review', 'Mark Helpful', productName);
     }
+  };
+
+  const handleWriteReviewClick = () => {
+    if (!showForm) {
+      trackEvent('Review', 'Open Form', productName);
+    }
+    setShowForm(!showForm);
   };
 
   const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
@@ -181,7 +203,7 @@ export const ReviewSection = ({ productId, productName }: ReviewSectionProps) =>
                 </span>
               </div>
             </div>
-            <Button onClick={() => setShowForm(!showForm)}>
+            <Button onClick={handleWriteReviewClick}>
               {showForm ? "Cancel" : "Write a Review"}
             </Button>
           </div>

@@ -3,6 +3,7 @@ import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { trackEvent } from "@/lib/matomo";
 
 export const NewsletterSignup = () => {
   const [email, setEmail] = useState("");
@@ -17,6 +18,9 @@ export const NewsletterSignup = () => {
     
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
+    
+    // Track newsletter signup
+    trackEvent('Newsletter', 'Signup', 'Footer Form');
     
     setIsSubscribed(true);
     setIsSubmitting(false);

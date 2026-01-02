@@ -5,6 +5,7 @@ import { candles } from "@/data/candles";
 import { Candle } from "@/types/candle";
 import { formatPrice } from "@/lib/currency";
 import { cn } from "@/lib/utils";
+import { trackSiteSearch, trackEvent } from "@/lib/matomo";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
   const [results, setResults] = useState<Candle[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -42,12 +44,35 @@ export const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
     );
 
     setResults(filtered.slice(0, 6));
+
+    // Debounce site search tracking (track after user stops typing for 500ms)
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    searchTimeoutRef.current = setTimeout(() => {
+      if (query.trim().length >= 2) {
+        trackSiteSearch(query.trim(), 'Products', filtered.length);
+      }
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
   }, [query]);
 
-  const handleSelect = (slug: string) => {
-    navigate(`/shop/${slug}`);
+  const handleSelect = (candle: Candle) => {
+    // Track search result click
+    trackEvent('Search', 'Result Click', candle.name);
+    navigate(`/shop/${candle.slug}`);
     onClose();
     setQuery("");
+  };
+
+  const handlePopularSearch = (term: string) => {
+    trackEvent('Search', 'Popular Search Click', term);
+    setQuery(term);
   };
 
   useEffect(() => {
@@ -106,7 +131,7 @@ export const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
               {results.map((candle) => (
                 <button
                   key={candle.id}
-                  onClick={() => handleSelect(candle.slug)}
+                  onClick={() => handleSelect(candle)}
                   className="w-full flex items-center gap-4 p-4 hover:bg-secondary/50 transition-colors text-left border-b border-border/50 last:border-0"
                 >
                   <img
@@ -162,7 +187,7 @@ export const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
                 {["Lavender", "Vanilla", "Coffee", "Ocean", "Forest"].map((term) => (
                   <button
                     key={term}
-                    onClick={() => setQuery(term)}
+                    onClick={() => handlePopularSearch(term)}
                     className="px-3 py-1.5 text-sm border border-border hover:border-primary hover:text-primary transition-colors rounded-sm"
                   >
                     {term}
