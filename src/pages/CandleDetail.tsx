@@ -15,6 +15,7 @@ import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { ReviewSection } from "@/components/reviews/ReviewSection";
 import { RecentlyViewed } from "@/components/candle/RecentlyViewed";
 import { FloatingProductCTA } from "@/components/candle/FloatingProductCTA";
+import { trackProductView } from "@/lib/matomo";
 
 import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
 
@@ -44,10 +45,18 @@ const CandleDetail = () => {
     }
   };
 
-  // Add to recently viewed when candle loads
+  // Add to recently viewed and track product view in Matomo
   useEffect(() => {
     if (candle) {
       addToRecentlyViewed(candle);
+      
+      // Track product view in Matomo
+      trackProductView({
+        id: candle.id,
+        name: candle.name,
+        category: candle.collection || 'Candles',
+        price: candle.price,
+      });
     }
   }, [candle?.id]);
 

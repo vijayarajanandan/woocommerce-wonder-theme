@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/currency";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import scentoraLogo from "@/assets/scentora-logo.png";
 import { useCreateOrder } from "@/hooks/useWooCommerce";
 import { isWooCommerceConfigured } from "@/lib/woocommerce";
+import { trackOrder, trackCartUpdate } from "@/lib/matomo";
 
 // Razorpay types
 declare global {
@@ -73,6 +74,24 @@ const Checkout = () => {
   const shippingCost = subtotal >= 2000 ? 0 : 99;
   const total = subtotal + shippingCost;
 
+  // Track checkout start when page loads
+  useEffect(() => {
+    if (items.length > 0) {
+      const checkoutTotal = subtotal + (subtotal >= 2000 ? 0 : 99);
+      // Track cart state at checkout start (acts as checkout initiation event)
+      trackCartUpdate(
+        items.map((item) => ({
+          id: item.candle.id,
+          name: item.candle.name,
+          category: item.candle.collection || 'Candles',
+          price: item.candle.price,
+          quantity: item.quantity,
+        })),
+        checkoutTotal
+      );
+    }
+  }, []); // Only on mount
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
@@ -119,6 +138,24 @@ const Checkout = () => {
     });
 
     return order;
+  };
+
+  // Track order in Matomo before clearing cart
+  const trackOrderInMatomo = (orderId: number) => {
+    trackOrder({
+      orderId: orderId.toString(),
+      total: total,
+      subtotal: subtotal,
+      tax: 0, // Tax is inclusive in Indian pricing
+      shipping: shippingCost,
+      items: items.map((item) => ({
+        id: item.candle.id,
+        name: item.candle.name,
+        category: item.candle.collection || 'Candles',
+        price: item.candle.price,
+        quantity: item.quantity,
+      })),
+    });
   };
 
   const handleRazorpayPayment = async (orderId: number, orderKey: string) => {
@@ -183,6 +220,9 @@ const Checkout = () => {
         const paymentSuccess = await handleRazorpayPayment(order.id, order.order_key);
 
         if (paymentSuccess) {
+          // Track order in Matomo BEFORE clearing cart
+          trackOrderInMatomo(order.id);
+          
           toast.success("Payment successful! Order placed.");
           clearCart();
           navigate(`/order-confirmation?order=${order.id}`);
@@ -191,7 +231,9 @@ const Checkout = () => {
           navigate(`/order-confirmation?order=${order.id}&pending=true`);
         }
       } else {
-        // COD order
+        // COD order - Track order in Matomo BEFORE clearing cart
+        trackOrderInMatomo(order.id);
+        
         toast.success("Order placed successfully!");
         clearCart();
         navigate(`/order-confirmation?order=${order.id}`);
