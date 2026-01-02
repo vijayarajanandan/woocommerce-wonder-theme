@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import { CartItem, Candle } from "@/types/candle";
+import { trackCartUpdate } from "@/lib/matomo";
 
 interface CartState {
   items: CartItem[];
@@ -88,6 +89,21 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// Helper to track cart in Matomo
+const trackCart = (items: CartItem[]) => {
+  const cartTotal = items.reduce((total, item) => total + item.candle.price * item.quantity, 0);
+  trackCartUpdate(
+    items.map((item) => ({
+      id: item.candle.id,
+      name: item.candle.name,
+      category: item.candle.collection || 'Candles',
+      price: item.candle.price,
+      quantity: item.quantity,
+    })),
+    cartTotal
+  );
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, { items: [], isOpen: false });
 
@@ -108,14 +124,33 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addItem = (candle: Candle, quantity = 1) => {
     dispatch({ type: "ADD_ITEM", payload: { candle, quantity } });
+    // Track updated cart
+    const existingItem = state.items.find((item) => item.candle.id === candle.id);
+    const newItems = existingItem
+      ? state.items.map((item) =>
+          item.candle.id === candle.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        )
+      : [...state.items, { candle, quantity }];
+    trackCart(newItems);
   };
 
   const removeItem = (candleId: number) => {
     dispatch({ type: "REMOVE_ITEM", payload: { candleId } });
+    const newItems = state.items.filter((item) => item.candle.id !== candleId);
+    trackCart(newItems);
   };
 
   const updateQuantity = (candleId: number, quantity: number) => {
     dispatch({ type: "UPDATE_QUANTITY", payload: { candleId, quantity } });
+    const newItems =
+      quantity <= 0
+        ? state.items.filter((item) => item.candle.id !== candleId)
+        : state.items.map((item) =>
+            item.candle.id === candleId ? { ...item, quantity } : item
+          );
+    trackCart(newItems);
   };
 
   const clearCart = () => dispatch({ type: "CLEAR_CART" });
