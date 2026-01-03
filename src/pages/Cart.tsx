@@ -13,22 +13,29 @@ const Cart = () => {
   const { items, subtotal, itemCount, removeItem, updateQuantity } = useCart();
   const [promoCode, setPromoCode] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
+  const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
 
-  // Calculate discount amount (assuming percentage discount for now)
-  const discountAmount = promoCode ? Math.round(subtotal * (discount / 100)) : 0;
+  // Calculate discount amount based on type
+  const discountAmount = promoCode 
+    ? (discountType === "percent" 
+        ? Math.round(subtotal * (discount / 100)) 
+        : discount)
+    : 0;
   const estimatedTotal = subtotal - discountAmount;
 
-  const handleApplyPromo = (discountPercent: number, code: string) => {
-    setDiscount(discountPercent);
+  const handleApplyPromo = (discountValue: number, code: string, type: "percent" | "fixed") => {
+    setDiscount(discountValue);
     setPromoCode(code);
+    setDiscountType(type);
     
     // Track promo code in Matomo
-    trackPromoCode(code, discountPercent, subtotal);
+    trackPromoCode(code, discountValue, subtotal);
   };
 
   const handleRemovePromo = () => {
     setDiscount(0);
     setPromoCode(null);
+    setDiscountType("percent");
   };
 
   if (items.length === 0) {
@@ -174,12 +181,15 @@ const Cart = () => {
                   onRemove={handleRemovePromo}
                   appliedCode={promoCode}
                   discount={discount}
+                  cartSubtotal={subtotal}
                 />
               </div>
 
               {discountAmount > 0 && (
                 <div className="flex justify-between text-sm mb-4">
-                  <span className="text-primary">Discount ({promoCode})</span>
+                  <span className="text-primary">
+                    Discount ({promoCode})
+                  </span>
                   <span className="text-primary">-{formatPrice(discountAmount)}</span>
                 </div>
               )}

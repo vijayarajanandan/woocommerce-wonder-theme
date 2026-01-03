@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Minus, Plus, Flame, Truck, RotateCcw, Shield
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { useRecentlyViewed } from "@/context/RecentlyViewedContext";
@@ -17,7 +18,42 @@ import { RecentlyViewed } from "@/components/candle/RecentlyViewed";
 import { FloatingProductCTA } from "@/components/candle/FloatingProductCTA";
 import { trackProductView } from "@/lib/matomo";
 
+// WooCommerce hooks
+import { useProductBySlug, useRelatedProducts, useFeaturedProducts } from "@/hooks/useWooCommerce";
+import { isWooCommerceConfigured } from "@/lib/woocommerce";
+
+// Fallback static data
 import { getCandleBySlug, getFeaturedCandles } from "@/data/candles";
+
+// Loading skeleton for product detail
+const ProductDetailSkeleton = () => (
+  <div className="min-h-screen flex flex-col bg-background">
+    <Header />
+    <main className="flex-1 pt-[137px]">
+      <div className="container mx-auto px-6 lg:px-12 py-12">
+        <Skeleton className="h-4 w-32 mb-10" />
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20">
+          <div className="space-y-4">
+            <Skeleton className="aspect-[3/4] w-full" />
+            <div className="flex gap-3">
+              <Skeleton className="w-20 h-24" />
+              <Skeleton className="w-20 h-24" />
+            </div>
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-12 w-3/4" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </div>
+      </div>
+    </main>
+    <Footer />
+  </div>
+);
 
 const CandleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -29,11 +65,25 @@ const CandleDetail = () => {
   const alsoLikeScrollRef = useRef<HTMLDivElement>(null);
   const addToCartRef = useRef<HTMLButtonElement>(null);
 
-  // Get candle data
-  const candle = getCandleBySlug(slug || "");
+  // Check if WooCommerce is configured
+  const wcConfigured = isWooCommerceConfigured();
+
+  // Fetch from WooCommerce if configured
+  const { data: wcCandle, isLoading: productLoading } = useProductBySlug(slug);
+  const { data: wcRelated } = useRelatedProducts(wcCandle?.id, 3);
+  const { data: wcFeatured } = useFeaturedProducts(4);
+
+  // Use WooCommerce data if available, otherwise fallback to static
+  const candle = wcConfigured && wcCandle ? wcCandle : getCandleBySlug(slug || "");
   
-  // Get related candles
-  const relatedCandles = getFeaturedCandles().filter(c => c.slug !== slug).slice(0, 3);
+  // Get related candles - prefer WC related, then WC featured, then static
+  const relatedCandles = wcConfigured && wcRelated && wcRelated.length > 0
+    ? wcRelated.filter(c => c.slug !== slug).slice(0, 3)
+    : (wcConfigured && wcFeatured 
+        ? wcFeatured.filter(c => c.slug !== slug).slice(0, 3)
+        : getFeaturedCandles().filter(c => c.slug !== slug).slice(0, 3));
+
+  const isLoading = wcConfigured && productLoading;
 
   const scroll = (direction: 'left' | 'right') => {
     if (alsoLikeScrollRef.current) {
@@ -65,6 +115,11 @@ const CandleDetail = () => {
     setSelectedImage(0);
     setQuantity(1);
   }, [slug]);
+
+  // Loading state
+  if (isLoading) {
+    return <ProductDetailSkeleton />;
+  }
 
   // Not found state
   if (!candle) {
