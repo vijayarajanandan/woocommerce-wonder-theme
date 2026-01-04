@@ -6,14 +6,93 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ShoppingBag, Lock, Truck, Package, CreditCard, Wallet } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Lock, Truck, Package, CreditCard, Wallet, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import scentoraLogo from "@/assets/scentora-logo.png";
 import { useCreateOrder } from "@/hooks/useWooCommerce";
 import { isWooCommerceConfigured } from "@/lib/woocommerce";
 import { trackOrder, trackCartUpdate, trackPaymentMethodSelected } from "@/lib/matomo";
 
-// Payment gateway types
+// =============================================================================
+// SECURITY UTILITIES
+// =============================================================================
+
+/**
+ * Sanitize string for Cashfree API - only alphanumeric, underscore, hyphen
+ * Prevents injection and API errors
+ */
+const sanitizeAlphanumeric = (str: string, maxLength: number = 50): string => {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .substring(0, maxLength)
+    .replace(/^_+|_+$/g, ''); // Trim leading/trailing underscores
+};
+
+/**
+ * Sanitize email - basic validation and trimming
+ */
+const sanitizeEmail = (email: string): string => {
+  if (!email || typeof email !== 'string') return '';
+  return email.trim().toLowerCase().substring(0, 254);
+};
+
+/**
+ * Sanitize phone - extract only digits, ensure 10 digits for India
+ */
+const sanitizePhone = (phone: string): string => {
+  if (!phone || typeof phone !== 'string') return '';
+  const digits = phone.replace(/\D/g, '');
+  // Get last 10 digits (removes country code if present)
+  return digits.slice(-10);
+};
+
+/**
+ * Sanitize name - allow letters, spaces, hyphens, apostrophes
+ */
+const sanitizeName = (name: string, maxLength: number = 100): string => {
+  if (!name || typeof name !== 'string') return '';
+  return name
+    .replace(/[^a-zA-Z\s\-'\.]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, maxLength);
+};
+
+/**
+ * Sanitize address - allow common address characters
+ */
+const sanitizeAddress = (address: string, maxLength: number = 200): string => {
+  if (!address || typeof address !== 'string') return '';
+  return address
+    .replace(/[<>\"'`]/g, '') // Remove potential XSS chars
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, maxLength);
+};
+
+/**
+ * Sanitize PIN code - only digits, exactly 6 for India
+ */
+const sanitizePincode = (pincode: string): string => {
+  if (!pincode || typeof pincode !== 'string') return '';
+  return pincode.replace(/\D/g, '').substring(0, 6);
+};
+
+/**
+ * Generate secure customer ID for Cashfree
+ */
+const generateCustomerId = (email: string): string => {
+  const emailPrefix = sanitizeAlphanumeric(email.split('@')[0], 20);
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `cust_${emailPrefix || 'user'}_${timestamp}_${random}`;
+};
+
+// =============================================================================
+// PAYMENT GATEWAY TYPES AND CONFIG
+// =============================================================================
+
 declare global {
   interface Window {
     Razorpay: any;
@@ -21,7 +100,6 @@ declare global {
   }
 }
 
-// Configuration - set which gateways are enabled
 const PAYMENT_CONFIG = {
   cashfree: {
     enabled: import.meta.env.VITE_CASHFREE_ENABLED === 'true',
@@ -32,16 +110,19 @@ const PAYMENT_CONFIG = {
     keyId: import.meta.env.VITE_RAZORPAY_KEY_ID,
   },
   cod: {
-    enabled: true, // Always available
+    enabled: true,
   },
 };
 
-// Determine default payment method based on what's enabled
 const getDefaultPaymentMethod = (): "cashfree" | "razorpay" | "cod" => {
   if (PAYMENT_CONFIG.cashfree.enabled) return "cashfree";
   if (PAYMENT_CONFIG.razorpay.enabled) return "razorpay";
   return "cod";
 };
+
+// =============================================================================
+// FORM TYPES
+// =============================================================================
 
 interface FormData {
   email: string;
@@ -54,6 +135,10 @@ interface FormData {
   state: string;
   pincode: string;
   country: string;
+}
+
+interface FormErrors {
+  [key: string]: string;
 }
 
 const initialFormData: FormData = {
@@ -69,7 +154,10 @@ const initialFormData: FormData = {
   country: "India",
 };
 
-// Load Razorpay script
+// =============================================================================
+// SCRIPT LOADERS
+// =============================================================================
+
 const loadRazorpayScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
     if (window.Razorpay) {
@@ -84,7 +172,6 @@ const loadRazorpayScript = (): Promise<boolean> => {
   });
 };
 
-// Load Cashfree script
 const loadCashfreeScript = (): Promise<boolean> => {
   return new Promise((resolve) => {
     if (window.Cashfree) {
@@ -99,7 +186,20 @@ const loadCashfreeScript = (): Promise<boolean> => {
   });
 };
 
-// Create Cashfree order via backend
+// =============================================================================
+// CASHFREE API - WITH PROPER ERROR HANDLING
+// =============================================================================
+
+interface CashfreeOrderResponse {
+  payment_session_id: string;
+  order_id: string;
+}
+
+interface CashfreeError {
+  code: string;
+  message: string;
+}
+
 const createCashfreeOrder = async (
   orderId: number,
   amount: number,
@@ -109,37 +209,84 @@ const createCashfreeOrder = async (
     customerPhone: string;
     customerName: string;
   }
-): Promise<{ payment_session_id: string; order_id: string } | null> => {
+): Promise<{ success: true; data: CashfreeOrderResponse } | { success: false; error: string }> => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || ''}/wp-json/scentora/v1/cashfree/create-order`, {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    
+    if (!backendUrl) {
+      return { success: false, error: "Payment system not configured. Please contact support." };
+    }
+
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return { success: false, error: "Invalid order amount." };
+    }
+
+    // Validate customer details
+    if (!customerDetails.customerEmail || !customerDetails.customerPhone) {
+      return { success: false, error: "Customer details are incomplete." };
+    }
+
+    const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/create-order`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         order_id: `SCNT_${orderId}_${Date.now()}`,
-        order_amount: amount,
+        order_amount: Number(amount.toFixed(2)),
         order_currency: "INR",
-        customer_details: customerDetails,
+        customer_details: {
+          customerId: customerDetails.customerId,
+          customerEmail: customerDetails.customerEmail,
+          customerPhone: customerDetails.customerPhone,
+          customerName: customerDetails.customerName,
+        },
         order_meta: {
           return_url: `${window.location.origin}/order-confirmation?order=${orderId}&cf_order_id={order_id}`,
-          notify_url: `${import.meta.env.VITE_BACKEND_URL || ''}/wp-json/scentora/v1/cashfree/webhook`,
+          notify_url: `${backendUrl}/wp-json/scentora/v1/cashfree/webhook`,
         },
       }),
     });
 
-    if (!response.ok) throw new Error("Failed to create Cashfree order");
-    return await response.json();
+    const data = await response.json();
+    
+    if (!response.ok) {
+      // Parse error message from backend
+      const errorMessage = data.message || "Payment initialization failed.";
+      console.error("Cashfree API error:", data);
+      return { success: false, error: errorMessage };
+    }
+    
+    if (!data.payment_session_id) {
+      return { success: false, error: "Invalid response from payment gateway." };
+    }
+
+    return { success: true, data };
   } catch (error) {
     console.error("Cashfree order creation error:", error);
-    return null;
+    
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return { success: false, error: "Unable to connect to payment server. Please check your internet connection." };
+    }
+    
+    return { success: false, error: "An unexpected error occurred. Please try again." };
   }
 };
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
 
 const Checkout = () => {
   const { items, subtotal, itemCount, clearCart } = useCart();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStep, setProcessingStep] = useState<string>("");
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [paymentMethod, setPaymentMethod] = useState<"cashfree" | "razorpay" | "cod">(getDefaultPaymentMethod());
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const createOrder = useCreateOrder();
 
@@ -147,11 +294,9 @@ const Checkout = () => {
   const shippingCost = subtotal >= 2000 ? 0 : 99;
   const total = subtotal + shippingCost;
 
-  // Check which online payment options are available
-  const hasOnlinePayment = PAYMENT_CONFIG.cashfree.enabled || PAYMENT_CONFIG.razorpay.enabled;
-
   const handlePaymentMethodChange = (method: "cashfree" | "razorpay" | "cod") => {
     setPaymentMethod(method);
+    setPaymentError(null);
     const methodNames = {
       cashfree: "Online Payment (Cashfree)",
       razorpay: "Online Payment (Razorpay)",
@@ -160,7 +305,6 @@ const Checkout = () => {
     trackPaymentMethodSelected(methodNames[method]);
   };
 
-  // Track checkout start
   useEffect(() => {
     if (items.length > 0) {
       trackCartUpdate(
@@ -179,39 +323,108 @@ const Checkout = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
+    // Clear error when user starts typing
+    if (formErrors[id]) {
+      setFormErrors((prev) => ({ ...prev, [id]: "" }));
+    }
   };
 
+  // =============================================================================
+  // VALIDATION - COMPREHENSIVE
+  // =============================================================================
+
   const validateForm = (): boolean => {
-    const required = ["email", "phone", "firstName", "lastName", "address", "city", "state", "pincode"];
-    for (const field of required) {
-      if (!formData[field as keyof FormData]) {
-        toast.error(`Please fill in ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`);
-        return false;
-      }
+    const errors: FormErrors = {};
+    
+    // Email validation
+    const email = sanitizeEmail(formData.email);
+    if (!email) {
+      errors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Please enter a valid email address";
     }
-    if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      toast.error("Please enter a valid email");
+
+    // Phone validation
+    const phone = sanitizePhone(formData.phone);
+    if (!phone) {
+      errors.phone = "Phone number is required";
+    } else if (phone.length !== 10) {
+      errors.phone = "Please enter a valid 10-digit mobile number";
+    } else if (!/^[6-9]/.test(phone)) {
+      errors.phone = "Please enter a valid Indian mobile number";
+    }
+
+    // Name validation
+    const firstName = sanitizeName(formData.firstName);
+    const lastName = sanitizeName(formData.lastName);
+    if (!firstName) {
+      errors.firstName = "First name is required";
+    } else if (firstName.length < 2) {
+      errors.firstName = "First name must be at least 2 characters";
+    }
+    if (!lastName) {
+      errors.lastName = "Last name is required";
+    } else if (lastName.length < 2) {
+      errors.lastName = "Last name must be at least 2 characters";
+    }
+
+    // Address validation
+    const address = sanitizeAddress(formData.address);
+    if (!address) {
+      errors.address = "Address is required";
+    } else if (address.length < 10) {
+      errors.address = "Please enter a complete address";
+    }
+
+    // City validation
+    const city = sanitizeName(formData.city);
+    if (!city) {
+      errors.city = "City is required";
+    }
+
+    // State validation
+    const state = sanitizeName(formData.state);
+    if (!state) {
+      errors.state = "State is required";
+    }
+
+    // Pincode validation
+    const pincode = sanitizePincode(formData.pincode);
+    if (!pincode) {
+      errors.pincode = "PIN code is required";
+    } else if (pincode.length !== 6) {
+      errors.pincode = "Please enter a valid 6-digit PIN code";
+    }
+
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      // Show first error as toast
+      const firstError = Object.values(errors)[0];
+      toast.error(firstError);
       return false;
     }
-    if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, '').slice(-10))) {
-      toast.error("Please enter a valid 10-digit mobile number");
-      return false;
-    }
+
     return true;
   };
 
+  // =============================================================================
+  // CREATE WOOCOMMERCE ORDER - SANITIZED
+  // =============================================================================
+
   const createWooCommerceOrder = async () => {
-    const addressData = {
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      address_1: formData.address,
-      address_2: formData.apartment,
-      city: formData.city,
-      state: formData.state,
-      postcode: formData.pincode,
+    // Sanitize all data before sending
+    const sanitizedData = {
+      first_name: sanitizeName(formData.firstName),
+      last_name: sanitizeName(formData.lastName),
+      address_1: sanitizeAddress(formData.address),
+      address_2: sanitizeAddress(formData.apartment),
+      city: sanitizeName(formData.city),
+      state: sanitizeName(formData.state),
+      postcode: sanitizePincode(formData.pincode),
       country: "IN",
-      email: formData.email,
-      phone: formData.phone,
+      email: sanitizeEmail(formData.email),
+      phone: sanitizePhone(formData.phone),
     };
 
     const paymentMethodMap = {
@@ -221,8 +434,8 @@ const Checkout = () => {
     };
 
     const order = await createOrder.mutateAsync({
-      billing: addressData,
-      shipping: addressData,
+      billing: sanitizedData,
+      shipping: sanitizedData,
       lineItems: items.map((item) => ({
         productId: item.candle.id,
         quantity: item.quantity,
@@ -251,15 +464,21 @@ const Checkout = () => {
     });
   };
 
-  // Razorpay payment handler
-  const handleRazorpayPayment = async (orderId: number) => {
+  // =============================================================================
+  // RAZORPAY PAYMENT HANDLER
+  // =============================================================================
+
+  const handleRazorpayPayment = async (orderId: number): Promise<{ success: boolean; error?: string }> => {
     const scriptLoaded = await loadRazorpayScript();
     if (!scriptLoaded) {
-      toast.error("Failed to load payment gateway. Please try again.");
-      return false;
+      return { success: false, error: "Failed to load payment gateway. Please refresh and try again." };
     }
 
-    return new Promise<boolean>((resolve) => {
+    if (!PAYMENT_CONFIG.razorpay.keyId) {
+      return { success: false, error: "Payment gateway not configured. Please contact support." };
+    }
+
+    return new Promise((resolve) => {
       const options = {
         key: PAYMENT_CONFIG.razorpay.keyId,
         amount: Math.round(total * 100),
@@ -268,108 +487,219 @@ const Checkout = () => {
         description: `Order #${orderId}`,
         handler: function (response: any) {
           console.log("Razorpay payment successful:", response);
-          resolve(true);
+          resolve({ success: true });
         },
         prefill: {
-          name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
-          contact: formData.phone,
+          name: `${sanitizeName(formData.firstName)} ${sanitizeName(formData.lastName)}`,
+          email: sanitizeEmail(formData.email),
+          contact: sanitizePhone(formData.phone),
         },
         theme: { color: "#D4AF37" },
         modal: {
           ondismiss: function () {
-            resolve(false);
+            resolve({ success: false, error: "Payment was cancelled." });
           },
+          escape: false,
+          backdropclose: false,
         },
       };
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      try {
+        const razorpay = new window.Razorpay(options);
+        razorpay.on('payment.failed', function (response: any) {
+          console.error("Razorpay payment failed:", response.error);
+          resolve({ 
+            success: false, 
+            error: response.error?.description || "Payment failed. Please try again." 
+          });
+        });
+        razorpay.open();
+      } catch (error) {
+        console.error("Razorpay initialization error:", error);
+        resolve({ success: false, error: "Failed to initialize payment. Please try again." });
+      }
     });
   };
 
-  // Cashfree payment handler
-  const handleCashfreePayment = async (orderId: number) => {
+  // =============================================================================
+  // CASHFREE PAYMENT HANDLER
+  // =============================================================================
+
+  const handleCashfreePayment = async (orderId: number): Promise<{ success: boolean; error?: string }> => {
+    setProcessingStep("Loading payment gateway...");
+    
     const scriptLoaded = await loadCashfreeScript();
     if (!scriptLoaded) {
-      toast.error("Failed to load payment gateway. Please try again.");
-      return false;
+      return { success: false, error: "Failed to load payment gateway. Please refresh and try again." };
     }
 
-    const cfOrder = await createCashfreeOrder(orderId, total, {
-      customerId: `cust_${formData.email.split('@')[0]}_${Date.now()}`,
-      customerEmail: formData.email,
-      customerPhone: formData.phone.replace(/\D/g, '').slice(-10),
-      customerName: `${formData.firstName} ${formData.lastName}`,
-    });
+    setProcessingStep("Creating payment session...");
 
-    if (!cfOrder) {
-      toast.error("Failed to initialize payment. Please try again.");
-      return false;
+    // Create sanitized customer details
+    const customerDetails = {
+      customerId: generateCustomerId(formData.email),
+      customerEmail: sanitizeEmail(formData.email),
+      customerPhone: sanitizePhone(formData.phone),
+      customerName: `${sanitizeName(formData.firstName)} ${sanitizeName(formData.lastName)}`.trim(),
+    };
+
+    const result = await createCashfreeOrder(orderId, total, customerDetails);
+
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
 
-    return new Promise<boolean>((resolve) => {
-      const cashfree = window.Cashfree({
-        mode: PAYMENT_CONFIG.cashfree.env === "production" ? "production" : "sandbox",
-      });
+    setProcessingStep("Opening payment window...");
 
-      cashfree.checkout({
-        paymentSessionId: cfOrder.payment_session_id,
-        redirectTarget: "_modal",
-      }).then((result: any) => {
-        if (result.error) {
-          console.error("Cashfree payment error:", result.error);
-          resolve(false);
-        } else if (result.paymentDetails || result.redirect) {
-          resolve(true);
-        }
-      }).catch(() => resolve(false));
+    return new Promise((resolve) => {
+      try {
+        const cashfree = window.Cashfree({
+          mode: PAYMENT_CONFIG.cashfree.env === "production" ? "production" : "sandbox",
+        });
+
+        cashfree.checkout({
+          paymentSessionId: result.data.payment_session_id,
+          redirectTarget: "_modal",
+        }).then((checkoutResult: any) => {
+          if (checkoutResult.error) {
+            console.error("Cashfree payment error:", checkoutResult.error);
+            resolve({ 
+              success: false, 
+              error: checkoutResult.error.message || "Payment failed. Please try again." 
+            });
+          } else if (checkoutResult.paymentDetails) {
+            // Payment completed
+            if (checkoutResult.paymentDetails.paymentStatus === "SUCCESS") {
+              resolve({ success: true });
+            } else {
+              resolve({ 
+                success: false, 
+                error: `Payment ${checkoutResult.paymentDetails.paymentStatus.toLowerCase()}. Please try again.` 
+              });
+            }
+          } else if (checkoutResult.redirect) {
+            // User was redirected - assume success (webhook will confirm)
+            resolve({ success: true });
+          } else {
+            resolve({ success: false, error: "Payment was cancelled." });
+          }
+        }).catch((error: any) => {
+          console.error("Cashfree checkout error:", error);
+          resolve({ success: false, error: "Payment failed. Please try again." });
+        });
+      } catch (error) {
+        console.error("Cashfree initialization error:", error);
+        resolve({ success: false, error: "Failed to initialize payment. Please try again." });
+      }
     });
   };
+
+  // =============================================================================
+  // FORM SUBMISSION - WITH PROPER ERROR HANDLING
+  // =============================================================================
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setPaymentError(null);
 
-    if (!validateForm()) return;
+    // Validate form first
+    if (!validateForm()) {
+      return;
+    }
 
+    // Check WooCommerce configuration
     if (!isWooCommerceConfigured()) {
       toast.error("Store is not configured. Please contact support.");
       return;
     }
 
+    // Check if online payment is selected but not configured
+    if (paymentMethod === "cashfree" && !PAYMENT_CONFIG.cashfree.enabled) {
+      toast.error("Online payment is not available. Please select another payment method.");
+      return;
+    }
+
+    if (paymentMethod === "razorpay" && !PAYMENT_CONFIG.razorpay.enabled) {
+      toast.error("Online payment is not available. Please select another payment method.");
+      return;
+    }
+
     setIsProcessing(true);
+    setProcessingStep("Creating your order...");
+
+    let order: any = null;
 
     try {
-      const order = await createWooCommerceOrder();
-      console.log("Order created:", order);
+      // Step 1: Create WooCommerce order
+      order = await createWooCommerceOrder();
+      console.log("Order created:", order.id);
 
-      let paymentSuccess = false;
-
-      if (paymentMethod === "cashfree") {
-        paymentSuccess = await handleCashfreePayment(order.id);
-      } else if (paymentMethod === "razorpay") {
-        paymentSuccess = await handleRazorpayPayment(order.id);
-      } else {
-        // COD - no payment processing needed
-        paymentSuccess = true;
+      // Step 2: Process payment based on method
+      if (paymentMethod === "cod") {
+        // COD - Order created, proceed to confirmation
+        setProcessingStep("Confirming order...");
+        trackOrderInMatomo(order.id);
+        toast.success("Order placed successfully!");
+        clearCart();
+        navigate(`/order-confirmation?order=${order.id}`);
+        return;
       }
 
-      if (paymentSuccess) {
+      // Online payment
+      setProcessingStep("Processing payment...");
+      
+      let paymentResult: { success: boolean; error?: string };
+
+      if (paymentMethod === "cashfree") {
+        paymentResult = await handleCashfreePayment(order.id);
+      } else if (paymentMethod === "razorpay") {
+        paymentResult = await handleRazorpayPayment(order.id);
+      } else {
+        paymentResult = { success: false, error: "Invalid payment method selected." };
+      }
+
+      // Step 3: Handle payment result
+      if (paymentResult.success) {
         trackOrderInMatomo(order.id);
-        toast.success(paymentMethod === "cod" ? "Order placed successfully!" : "Payment successful! Order placed.");
+        toast.success("Payment successful! Order placed.");
         clearCart();
         navigate(`/order-confirmation?order=${order.id}`);
       } else {
-        toast.error("Payment cancelled. Your order is saved.");
-        navigate(`/order-confirmation?order=${order.id}&pending=true`);
+        // PAYMENT FAILED - DO NOT NAVIGATE TO CONFIRMATION
+        const errorMessage = paymentResult.error || "Payment failed. Please try again.";
+        setPaymentError(errorMessage);
+        toast.error(errorMessage);
+        
+        // Order was created but payment failed - show option to retry or pay later
+        console.error("Payment failed for order:", order.id, errorMessage);
       }
-    } catch (error) {
+
+    } catch (error: any) {
       console.error("Checkout error:", error);
-      toast.error("Failed to place order. Please try again.");
+      
+      // Determine user-friendly error message
+      let errorMessage = "An error occurred. Please try again.";
+      
+      if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = "Request timed out. Please try again.";
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setPaymentError(errorMessage);
+      toast.error(errorMessage);
+      
     } finally {
       setIsProcessing(false);
+      setProcessingStep("");
     }
   };
+
+  // =============================================================================
+  // RENDER - EMPTY CART
+  // =============================================================================
 
   if (items.length === 0) {
     return (
@@ -389,6 +719,10 @@ const Checkout = () => {
     );
   }
 
+  // =============================================================================
+  // RENDER - CHECKOUT FORM
+  // =============================================================================
+
   return (
     <div className="min-h-screen bg-background pt-8 pb-16">
       <div className="flex justify-center py-6 border-b border-border/30 mb-8">
@@ -405,6 +739,20 @@ const Checkout = () => {
           <div>
             <h1 className="font-display text-4xl text-foreground mb-8">Checkout</h1>
 
+            {/* Payment Error Alert */}
+            {paymentError && (
+              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-500 font-medium">Payment Failed</p>
+                  <p className="text-red-400 text-sm mt-1">{paymentError}</p>
+                  <p className="text-muted-foreground text-sm mt-2">
+                    Please try again or select a different payment method.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Contact Information */}
               <div className="space-y-4">
@@ -412,11 +760,31 @@ const Checkout = () => {
                 <div className="grid gap-4">
                   <div>
                     <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" required placeholder="your@email.com" value={formData.email} onChange={handleInputChange} />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      required 
+                      placeholder="your@email.com" 
+                      value={formData.email} 
+                      onChange={handleInputChange}
+                      className={formErrors.email ? "border-red-500" : ""}
+                      disabled={isProcessing}
+                    />
+                    {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone</Label>
-                    <Input id="phone" type="tel" required placeholder="+91 98765 43210" value={formData.phone} onChange={handleInputChange} />
+                    <Input 
+                      id="phone" 
+                      type="tel" 
+                      required 
+                      placeholder="+91 98765 43210" 
+                      value={formData.phone} 
+                      onChange={handleInputChange}
+                      className={formErrors.phone ? "border-red-500" : ""}
+                      disabled={isProcessing}
+                    />
+                    {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
                   </div>
                 </div>
               </div>
@@ -430,39 +798,106 @@ const Checkout = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" required placeholder="First name" value={formData.firstName} onChange={handleInputChange} />
+                      <Input 
+                        id="firstName" 
+                        required 
+                        placeholder="First name" 
+                        value={formData.firstName} 
+                        onChange={handleInputChange}
+                        className={formErrors.firstName ? "border-red-500" : ""}
+                        disabled={isProcessing}
+                      />
+                      {formErrors.firstName && <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>}
                     </div>
                     <div>
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" required placeholder="Last name" value={formData.lastName} onChange={handleInputChange} />
+                      <Input 
+                        id="lastName" 
+                        required 
+                        placeholder="Last name" 
+                        value={formData.lastName} 
+                        onChange={handleInputChange}
+                        className={formErrors.lastName ? "border-red-500" : ""}
+                        disabled={isProcessing}
+                      />
+                      {formErrors.lastName && <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>}
                     </div>
                   </div>
                   <div>
                     <Label htmlFor="address">Address</Label>
-                    <Input id="address" required placeholder="Street address" value={formData.address} onChange={handleInputChange} />
+                    <Input 
+                      id="address" 
+                      required 
+                      placeholder="Street address" 
+                      value={formData.address} 
+                      onChange={handleInputChange}
+                      className={formErrors.address ? "border-red-500" : ""}
+                      disabled={isProcessing}
+                    />
+                    {formErrors.address && <p className="text-red-500 text-xs mt-1">{formErrors.address}</p>}
                   </div>
                   <div>
                     <Label htmlFor="apartment">Apartment, suite, etc. (optional)</Label>
-                    <Input id="apartment" placeholder="Apartment, suite, unit, etc." value={formData.apartment} onChange={handleInputChange} />
+                    <Input 
+                      id="apartment" 
+                      placeholder="Apartment, suite, unit, etc." 
+                      value={formData.apartment} 
+                      onChange={handleInputChange}
+                      disabled={isProcessing}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="city">City</Label>
-                      <Input id="city" required placeholder="City" value={formData.city} onChange={handleInputChange} />
+                      <Input 
+                        id="city" 
+                        required 
+                        placeholder="City" 
+                        value={formData.city} 
+                        onChange={handleInputChange}
+                        className={formErrors.city ? "border-red-500" : ""}
+                        disabled={isProcessing}
+                      />
+                      {formErrors.city && <p className="text-red-500 text-xs mt-1">{formErrors.city}</p>}
                     </div>
                     <div>
                       <Label htmlFor="state">State</Label>
-                      <Input id="state" required placeholder="State" value={formData.state} onChange={handleInputChange} />
+                      <Input 
+                        id="state" 
+                        required 
+                        placeholder="State" 
+                        value={formData.state} 
+                        onChange={handleInputChange}
+                        className={formErrors.state ? "border-red-500" : ""}
+                        disabled={isProcessing}
+                      />
+                      {formErrors.state && <p className="text-red-500 text-xs mt-1">{formErrors.state}</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="pincode">PIN Code</Label>
-                      <Input id="pincode" required placeholder="PIN code" value={formData.pincode} onChange={handleInputChange} />
+                      <Input 
+                        id="pincode" 
+                        required 
+                        placeholder="PIN code" 
+                        value={formData.pincode} 
+                        onChange={handleInputChange}
+                        className={formErrors.pincode ? "border-red-500" : ""}
+                        disabled={isProcessing}
+                      />
+                      {formErrors.pincode && <p className="text-red-500 text-xs mt-1">{formErrors.pincode}</p>}
                     </div>
                     <div>
                       <Label htmlFor="country">Country</Label>
-                      <Input id="country" required value={formData.country} onChange={handleInputChange} placeholder="Country" />
+                      <Input 
+                        id="country" 
+                        required 
+                        value={formData.country} 
+                        onChange={handleInputChange} 
+                        placeholder="Country"
+                        disabled={isProcessing}
+                      />
                     </div>
                   </div>
                 </div>
@@ -476,8 +911,16 @@ const Checkout = () => {
                 <div className="space-y-3">
                   {/* Cashfree Option */}
                   {PAYMENT_CONFIG.cashfree.enabled && (
-                    <label className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "cashfree" ? "border-primary bg-primary/5" : "border-border/30 hover:border-border"}`}>
-                      <input type="radio" name="paymentMethod" value="cashfree" checked={paymentMethod === "cashfree"} onChange={() => handlePaymentMethodChange("cashfree")} className="sr-only" />
+                    <label className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "cashfree" ? "border-primary bg-primary/5" : "border-border/30 hover:border-border"} ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}>
+                      <input 
+                        type="radio" 
+                        name="paymentMethod" 
+                        value="cashfree" 
+                        checked={paymentMethod === "cashfree"} 
+                        onChange={() => handlePaymentMethodChange("cashfree")} 
+                        className="sr-only"
+                        disabled={isProcessing}
+                      />
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "cashfree" ? "border-primary" : "border-muted-foreground"}`}>
                         {paymentMethod === "cashfree" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                       </div>
@@ -490,10 +933,18 @@ const Checkout = () => {
                     </label>
                   )}
 
-                  {/* Razorpay Option - Show if Cashfree is disabled OR both are enabled */}
+                  {/* Razorpay Option - Show only if Cashfree is disabled */}
                   {PAYMENT_CONFIG.razorpay.enabled && !PAYMENT_CONFIG.cashfree.enabled && (
-                    <label className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border/30 hover:border-border"}`}>
-                      <input type="radio" name="paymentMethod" value="razorpay" checked={paymentMethod === "razorpay"} onChange={() => handlePaymentMethodChange("razorpay")} className="sr-only" />
+                    <label className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border/30 hover:border-border"} ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}>
+                      <input 
+                        type="radio" 
+                        name="paymentMethod" 
+                        value="razorpay" 
+                        checked={paymentMethod === "razorpay"} 
+                        onChange={() => handlePaymentMethodChange("razorpay")} 
+                        className="sr-only"
+                        disabled={isProcessing}
+                      />
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "razorpay" ? "border-primary" : "border-muted-foreground"}`}>
                         {paymentMethod === "razorpay" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                       </div>
@@ -507,8 +958,16 @@ const Checkout = () => {
                   )}
 
                   {/* COD Option */}
-                  <label className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border/30 hover:border-border"}`}>
-                    <input type="radio" name="paymentMethod" value="cod" checked={paymentMethod === "cod"} onChange={() => handlePaymentMethodChange("cod")} className="sr-only" />
+                  <label className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-border/30 hover:border-border"} ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}>
+                    <input 
+                      type="radio" 
+                      name="paymentMethod" 
+                      value="cod" 
+                      checked={paymentMethod === "cod"} 
+                      onChange={() => handlePaymentMethodChange("cod")} 
+                      className="sr-only"
+                      disabled={isProcessing}
+                    />
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === "cod" ? "border-primary" : "border-muted-foreground"}`}>
                       {paymentMethod === "cod" && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
                     </div>
@@ -522,7 +981,17 @@ const Checkout = () => {
               </div>
 
               <Button type="submit" size="lg" className="w-full" disabled={isProcessing}>
-                {isProcessing ? "Processing..." : paymentMethod === "cod" ? `Place Order · ${formatPrice(total)}` : `Pay ${formatPrice(total)}`}
+                {isProcessing ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    {processingStep || "Processing..."}
+                  </span>
+                ) : (
+                  paymentMethod === "cod" ? `Place Order · ${formatPrice(total)}` : `Pay ${formatPrice(total)}`
+                )}
               </Button>
             </form>
           </div>
