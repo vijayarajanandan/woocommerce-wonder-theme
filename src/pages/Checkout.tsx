@@ -181,6 +181,94 @@ interface CashfreeCartItem {
   item_details_url?: string;
 }
 
+// Verify payment status with backend
+const verifyCashfreePayment = async (
+  orderId: string
+): Promise<{ success: boolean; status: string; error?: string }> => {
+  try {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    
+    if (!backendUrl) {
+      return { success: false, status: 'error', error: "Payment verification unavailable." };
+    }
+
+    const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/verify/${encodeURIComponent(orderId)}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      return { success: false, status: 'error', error: data.message || "Verification failed." };
+    }
+    
+    // Backend returns both order_status and payment_status from Cashfree API
+    const orderStatus = data.order_status?.toUpperCase();
+    const paymentStatus = data.payment_status?.toUpperCase();
+    
+    // If order is PAID, payment was successful
+    if (orderStatus === "PAID") {
+      return { success: true, status: "PAID" };
+    }
+    
+    // If we have a SUCCESS payment_status, payment was successful
+    if (paymentStatus === "SUCCESS") {
+      return { success: true, status: "SUCCESS" };
+    }
+    
+    // Order is ACTIVE but no successful payment yet
+    if (orderStatus === "ACTIVE") {
+      // Check if there's a specific payment failure
+      if (paymentStatus === "FAILED") {
+        return { 
+          success: false, 
+          status: "FAILED",
+          error: data.payment_message || "Payment failed. Please try again."
+        };
+      }
+      if (paymentStatus === "USER_DROPPED") {
+        return { 
+          success: false, 
+          status: "USER_DROPPED",
+          error: "Payment was cancelled. Please try again."
+        };
+      }
+      if (paymentStatus === "PENDING") {
+        return { 
+          success: false, 
+          status: "PENDING",
+          error: "Payment is still processing. Please wait or try again."
+        };
+      }
+      // No payment attempts or unclear status
+      return { 
+        success: false, 
+        status: "ACTIVE",
+        error: "Payment not completed. Please try again."
+      };
+    }
+    
+    // Order expired
+    if (orderStatus === "EXPIRED") {
+      return { 
+        success: false, 
+        status: "EXPIRED",
+        error: "Payment session expired. Please try again."
+      };
+    }
+    
+    // Unknown status
+    return { 
+      success: false, 
+      status: orderStatus || 'unknown',
+      error: `Payment ${orderStatus?.toLowerCase() || 'not completed'}. Please try again.`
+    };
+  } catch (error) {
+    return { success: false, status: 'error', error: "Could not verify payment. Please check your order status." };
+  }
+};
+
 const createCashfreeOrder = async (
   orderId: number,
   amount: number,
@@ -209,20 +297,25 @@ const createCashfreeOrder = async (
     }
 
     // Build cart_details with correct Cashfree field names
+    // Add shipping as a line item so it's visible in the modal
+    const allItems = [...cartItems];
+    
+    if (shippingCost > 0) {
+      allItems.push({
+        item_id: 'SHIPPING',
+        item_name: 'Shipping',
+        item_original_unit_price: Number(shippingCost.toFixed(2)),
+        item_quantity: 1,
+      });
+    }
+
     const cart_details: {
       cart_name: string;
       cart_items: CashfreeCartItem[];
-      shipping_charges?: number;
-      tax_amount?: number;
     } = {
       cart_name: `Scentora Order #${orderId}`,
-      cart_items: cartItems,
+      cart_items: allItems,
     };
-
-    // Only add shipping_charges if > 0
-    if (shippingCost > 0) {
-      cart_details.shipping_charges = Number(shippingCost.toFixed(2));
-    }
 
     const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/create-order`, {
       method: "POST",
@@ -611,36 +704,41 @@ const Checkout = () => {
             
             if (status === "SUCCESS") {
               resolve({ success: true });
-            } else if (status === "FAILED" || status === "CANCELLED" || status === "VOID") {
-              resolve({ 
-                success: false, 
-                error: `Payment ${status.toLowerCase()}. Please try again.` 
-              });
-            } else if (status === "PENDING" || status === "USER_DROPPED") {
-              // Payment not completed - user closed modal or payment is pending
-              resolve({ 
-                success: false, 
-                error: "Payment was not completed. Please try again." 
-              });
-            } else if (message && message.includes("Check status")) {
-              // "Payment finished. Check status." - need to verify with backend
-              // For now, treat as pending/incomplete
-              resolve({ 
-                success: false, 
-                error: "Payment status is uncertain. Please check your order status or try again." 
-              });
-            } else if (status) {
-              resolve({ 
-                success: false, 
-                error: `Payment ${status.toLowerCase()}. Please try again.` 
-              });
-            } else {
-              // paymentDetails exists but no clear status
-              resolve({ 
-                success: false, 
-                error: "Payment was not completed. Please try again." 
-              });
+              return;
             }
+            
+            if (status === "FAILED" || status === "CANCELLED" || status === "VOID") {
+              resolve({ 
+                success: false, 
+                error: `Payment ${status.toLowerCase()}. Please try again.` 
+              });
+              return;
+            }
+            
+            if (status === "USER_DROPPED") {
+              resolve({ 
+                success: false, 
+                error: "Payment was not completed. Please try again." 
+              });
+              return;
+            }
+            
+            // "Payment finished. Check status." or PENDING or unclear - verify with backend
+            if (status === "PENDING" || (message && message.includes("Check status")) || !status) {
+              const verification = await verifyCashfreePayment(result.data.order_id);
+              resolve({ 
+                success: verification.success, 
+                error: verification.error 
+              });
+              return;
+            }
+            
+            // Unknown status - verify with backend
+            const verification = await verifyCashfreePayment(result.data.order_id);
+            resolve({ 
+              success: verification.success, 
+              error: verification.error 
+            });
             return;
           }
           
