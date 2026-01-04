@@ -10,6 +10,7 @@ import { ArrowLeft, ShoppingBag, Lock, Truck, Package, CreditCard, Wallet, Alert
 import { toast } from "sonner";
 import scentoraLogo from "@/assets/scentora-logo.png";
 import { useCreateOrder } from "@/hooks/useWooCommerce";
+import { useCreateOrder } from "@/hooks/useWooCommerce";
 import { isWooCommerceConfigured } from "@/lib/woocommerce";
 import { trackOrder, trackCartUpdate, trackPaymentMethodSelected } from "@/lib/matomo";
 
@@ -297,25 +298,19 @@ const createCashfreeOrder = async (
     }
 
     // Build cart_details with correct Cashfree field names
-    // Add shipping as a line item so it's visible in the modal
-    const allItems = [...cartItems];
-    
-    if (shippingCost > 0) {
-      allItems.push({
-        item_id: 'SHIPPING',
-        item_name: 'Shipping',
-        item_original_unit_price: Number(shippingCost.toFixed(2)),
-        item_quantity: 1,
-      });
-    }
-
     const cart_details: {
       cart_name: string;
       cart_items: CashfreeCartItem[];
+      shipping_charges?: number;
     } = {
       cart_name: `Scentora Order #${orderId}`,
-      cart_items: allItems,
+      cart_items: cartItems,
     };
+
+    // Add shipping_charges if > 0
+    if (shippingCost > 0) {
+      cart_details.shipping_charges = Number(shippingCost.toFixed(2));
+    }
 
     const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/create-order`, {
       method: "POST",
@@ -376,6 +371,8 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState<"cashfree" | "razorpay" | "cod">(getDefaultPaymentMethod());
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cartValidated, setCartValidated] = useState(false);
+
+  const createOrder = useCreateOrder();
 
   const createOrder = useCreateOrder();
 
@@ -542,18 +539,37 @@ const Checkout = () => {
       cod: { method: "cod", title: "Cash on Delivery" },
     };
 
+    // Use correct WooCommerce API field names
     const order = await createOrder.mutateAsync({
       billing: sanitizedData,
       shipping: sanitizedData,
-      lineItems: items.map((item) => ({
-        productId: item.candle.id,
+      line_items: items.map((item) => ({
+        product_id: item.candle.id,
         quantity: item.quantity,
       })),
-      paymentMethod: paymentMethodMap[paymentMethod].method,
-      paymentMethodTitle: paymentMethodMap[paymentMethod].title,
+      payment_method: paymentMethodMap[paymentMethod].method,
+      payment_method_title: paymentMethodMap[paymentMethod].title,
+      set_paid: paymentMethod === "cod",
     });
 
     return order;
+  };
+
+  // Update order status after successful payment
+  const updateOrderStatus = async (orderId: number, status: string = "processing") => {
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      if (!backendUrl) return;
+
+      await fetch(`${backendUrl}/wp-json/scentora/v1/orders/${orderId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+    } catch (error) {
+      // Silent fail - webhook will handle it
+      console.error("Failed to update order status:", error);
+    }
   };
 
   const trackOrderInMatomo = (orderId: number) => {
@@ -831,10 +847,12 @@ const Checkout = () => {
       }
 
       if (paymentResult.success) {
+        setProcessingStep("Confirming order...");
+        await updateOrderStatus(order.id, "processing");
         trackOrderInMatomo(order.id);
         toast.success("Payment successful! Order placed.");
         clearCart();
-        navigate(`/order-confirmation?order=${order.id}`);
+        navigate(`/order-confirmation?order=${order.id}&status=paid`);
       } else {
         const errorMessage = paymentResult.error || "Payment failed. Please try again.";
         setPaymentError(errorMessage);
