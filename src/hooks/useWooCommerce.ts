@@ -230,15 +230,33 @@ export function useCategoryBySlug(slug: string | undefined) {
 // ORDER HOOKS
 // ============================================
 
+/**
+ * Parameters for creating a WooCommerce order
+ * 
+ * The line_items include fallback fields (price, name, sku, etc.) that are used
+ * by the PHP backend when WooCommerce product lookup fails. This ensures correct
+ * pricing even if the product ID doesn't exist in WooCommerce.
+ */
 interface CreateOrderParams {
   billing: WCAddress;
   shipping: WCAddress;
-  line_items: Array<{ product_id: number; quantity: number }>;
+  line_items: Array<{
+    product_id: number;
+    quantity: number;
+    // Fallback fields - used when WooCommerce product lookup fails
+    price?: number;
+    name?: string;
+    sku?: string;
+    image?: string;
+    collection?: string;
+    size?: string;
+  }>;
   payment_method?: string;
   payment_method_title?: string;
   set_paid?: boolean;
   customer_note?: string;
   coupon_lines?: Array<{ code: string }>;
+  shipping_cost?: number;
 }
 
 /**

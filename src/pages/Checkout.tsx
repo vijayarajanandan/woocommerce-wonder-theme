@@ -10,7 +10,7 @@ import { ArrowLeft, ShoppingBag, Lock, Truck, Package, CreditCard, Wallet, Alert
 import { toast } from "sonner";
 import scentoraLogo from "@/assets/scentora-logo.png";
 import { useCreateOrder } from "@/hooks/useWooCommerce";
-import { useCreateOrder } from "@/hooks/useWooCommerce";
+// FIX: Removed duplicate import
 import { isWooCommerceConfigured } from "@/lib/woocommerce";
 import { trackOrder, trackCartUpdate, trackPaymentMethodSelected } from "@/lib/matomo";
 
@@ -372,8 +372,7 @@ const Checkout = () => {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [cartValidated, setCartValidated] = useState(false);
 
-  const createOrder = useCreateOrder();
-
+  // FIX: Removed duplicate hook declaration
   const createOrder = useCreateOrder();
 
   // Calculate shipping
@@ -505,7 +504,7 @@ const Checkout = () => {
 
   const validateCartItems = (): boolean => {
     // Check for suspicious IDs (static data has IDs 1-10)
-    const suspiciousItems = items.filter(item => item.candle.id < 10);
+    const suspiciousItems = items.filter(item => item.candle.id <= 10);
     
     if (suspiciousItems.length > 0) {
       toast.error("Your cart contains invalid products. Please clear your cart and add products again.");
@@ -539,17 +538,27 @@ const Checkout = () => {
       cod: { method: "cod", title: "Cash on Delivery" },
     };
 
-    // Use correct WooCommerce API field names
+    // FIX: Include price, name, sku, and image as fallbacks for custom line items
+    // This ensures correct pricing even if WooCommerce product lookup fails
     const order = await createOrder.mutateAsync({
       billing: sanitizedData,
       shipping: sanitizedData,
       line_items: items.map((item) => ({
         product_id: item.candle.id,
         quantity: item.quantity,
+        // Fallback fields - used if product_id lookup fails in WooCommerce
+        price: item.candle.price,
+        name: item.candle.name,
+        sku: item.candle.sku || `SCNT-${item.candle.id}`,
+        image: item.candle.images?.[0] || '',
+        collection: item.candle.collection || '',
+        size: item.candle.size || '',
       })),
       payment_method: paymentMethodMap[paymentMethod].method,
       payment_method_title: paymentMethodMap[paymentMethod].title,
       set_paid: paymentMethod === "cod",
+      // Include shipping cost for the backend
+      shipping_cost: shippingCost,
     });
 
     return order;
