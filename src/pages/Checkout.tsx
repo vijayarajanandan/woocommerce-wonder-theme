@@ -208,7 +208,14 @@ const createCashfreeOrder = async (
     customerEmail: string;
     customerPhone: string;
     customerName: string;
-  }
+  },
+  cartItems: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+    sku?: string;
+  }>,
+  shippingCost: number
 ): Promise<{ success: true; data: CashfreeOrderResponse } | { success: false; error: string }> => {
   try {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -226,6 +233,19 @@ const createCashfreeOrder = async (
     if (!customerDetails.customerEmail || !customerDetails.customerPhone) {
       return { success: false, error: "Customer details are incomplete." };
     }
+
+    // Build cart details for Cashfree checkout display
+    const cart_details = {
+      cart_name: `Scentora Order #${orderId}`,
+      cart_items: cartItems.map(item => ({
+        item_name: item.name.substring(0, 50), // Cashfree limit
+        item_sku: item.sku || `PROD-${orderId}`,
+        item_quantity: item.quantity,
+        item_unit_price: Number(item.price.toFixed(2)),
+      })),
+      shipping_charge: Number(shippingCost.toFixed(2)),
+      tax_amount: 0,
+    };
 
     const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/create-order`, {
       method: "POST",
@@ -246,6 +266,8 @@ const createCashfreeOrder = async (
           return_url: `${window.location.origin}/order-confirmation?order=${orderId}&cf_order_id={order_id}`,
           notify_url: `${backendUrl}/wp-json/scentora/v1/cashfree/webhook`,
         },
+        order_note: `Scentora Order #${orderId}`,
+        cart_details: cart_details,
       }),
     });
 
@@ -543,7 +565,15 @@ const Checkout = () => {
       customerName: `${sanitizeName(formData.firstName)} ${sanitizeName(formData.lastName)}`.trim(),
     };
 
-    const result = await createCashfreeOrder(orderId, total, customerDetails);
+    // Prepare cart items for Cashfree display
+    const cartItems = items.map(item => ({
+      name: item.candle.name,
+      quantity: item.quantity,
+      price: item.candle.price,
+      sku: `SCNT-${item.candle.id}`,
+    }));
+
+    const result = await createCashfreeOrder(orderId, total, customerDetails, cartItems, shippingCost);
 
     if (!result.success) {
       return { success: false, error: result.error };
@@ -568,7 +598,6 @@ const Checkout = () => {
               error: checkoutResult.error.message || "Payment failed. Please try again." 
             });
           } else if (checkoutResult.paymentDetails) {
-            // Payment completed
             if (checkoutResult.paymentDetails.paymentStatus === "SUCCESS") {
               resolve({ success: true });
             } else {
@@ -578,7 +607,6 @@ const Checkout = () => {
               });
             }
           } else if (checkoutResult.redirect) {
-            // User was redirected - assume success (webhook will confirm)
             resolve({ success: true });
           } else {
             resolve({ success: false, error: "Payment was cancelled." });
@@ -658,20 +686,15 @@ const Checkout = () => {
         paymentResult = { success: false, error: "Invalid payment method selected." };
       }
 
-      // Step 3: Handle payment result
       if (paymentResult.success) {
         trackOrderInMatomo(order.id);
         toast.success("Payment successful! Order placed.");
         clearCart();
         navigate(`/order-confirmation?order=${order.id}`);
       } else {
-        // PAYMENT FAILED - DO NOT NAVIGATE TO CONFIRMATION
         const errorMessage = paymentResult.error || "Payment failed. Please try again.";
         setPaymentError(errorMessage);
         toast.error(errorMessage);
-        
-        // Order was created but payment failed - show option to retry or pay later
-        console.error("Payment failed for order:", order.id, errorMessage);
       }
 
     } catch (error: any) {
