@@ -1,11 +1,22 @@
+/**
+ * Homepage - WooCommerce Integrated
+ * 
+ * Fetches featured products, bestsellers, and collections from WooCommerce.
+ * Falls back gracefully if WooCommerce is not configured.
+ */
+
 import { Link } from "react-router-dom";
-import { ArrowRight, Flame, Truck, Leaf, Award, Hand, Droplets, Timer, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Flame, Leaf, Award, Hand, Droplets, Timer, Sparkles, ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CandleCard } from "@/components/candle/CandleCard";
-import { getFeaturedCandles, getBestsellers, collections, candles } from "@/data/candles";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRef } from "react";
+
+// WooCommerce hooks
+import { useFeaturedProducts, useBestsellerProducts, useCategories } from "@/hooks/useWooCommerce";
+import { isWooCommerceConfigured } from "@/lib/woocommerce";
 
 // Import product images for banners
 import coffeeEmber1 from "@/assets/products/coffee-ember-1-enhanced.jpg";
@@ -17,11 +28,35 @@ import noirCollection from "@/assets/collections/noir-collection.jpg";
 import botanicalCollection from "@/assets/collections/botanical-collection.jpg";
 import limitedCollection from "@/assets/collections/limited-collection.jpg";
 
+// Product card skeleton
+const ProductCardSkeleton = () => (
+  <div className="flex-shrink-0 w-[280px] sm:w-[300px] space-y-4">
+    <Skeleton className="aspect-[3/4] w-full" />
+    <div className="text-center space-y-2 px-2">
+      <Skeleton className="h-3 w-16 mx-auto" />
+      <Skeleton className="h-6 w-32 mx-auto" />
+      <Skeleton className="h-4 w-24 mx-auto" />
+      <Skeleton className="h-5 w-16 mx-auto" />
+    </div>
+  </div>
+);
+
+// Collection card skeleton
+const CollectionCardSkeleton = () => (
+  <div className="aspect-[3/4] bg-secondary/30 animate-pulse rounded-lg" />
+);
+
 const Index = () => {
-  const featuredCandles = getFeaturedCandles();
-  const bestsellers = getBestsellers();
   const featuredScrollRef = useRef<HTMLDivElement>(null);
   const bestsellersScrollRef = useRef<HTMLDivElement>(null);
+
+  // Check if WooCommerce is configured
+  const wcConfigured = isWooCommerceConfigured();
+
+  // Fetch from WooCommerce
+  const { data: featuredCandles, isLoading: featuredLoading } = useFeaturedProducts(8);
+  const { data: bestsellers, isLoading: bestsellersLoading } = useBestsellerProducts(8);
+  const { data: collections, isLoading: collectionsLoading } = useCategories();
 
   const scroll = (ref: React.RefObject<HTMLDivElement>, direction: 'left' | 'right') => {
     if (ref.current) {
@@ -40,6 +75,28 @@ const Index = () => {
     'botanical': botanicalCollection,
     'limited': limitedCollection,
   };
+
+  // If WooCommerce is not configured, show a notice
+  if (!wcConfigured) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 pt-[137px] flex items-center justify-center">
+          <div className="text-center px-6">
+            <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-6" />
+            <h1 className="font-display text-3xl text-foreground mb-4">Store Setup Required</h1>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              The product catalog is not connected. Please configure WooCommerce to display products.
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/about">Learn About Scentora</Link>
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -160,11 +217,18 @@ const Index = () => {
               className="flex gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6 snap-x snap-mandatory"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {featuredCandles.map((candle, index) => (
-                <div key={candle.id} className="flex-shrink-0 w-[280px] sm:w-[300px] snap-start">
-                  <CandleCard candle={candle} index={index} />
-                </div>
-              ))}
+              {featuredLoading ? (
+                // Loading skeletons
+                [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} />)
+              ) : featuredCandles && featuredCandles.length > 0 ? (
+                featuredCandles.map((candle, index) => (
+                  <div key={candle.id} className="flex-shrink-0 w-[280px] sm:w-[300px] snap-start">
+                    <CandleCard candle={candle} index={index} />
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No featured products available.</p>
+              )}
             </div>
             <div className="text-center mt-12">
               <Button asChild variant="gold" size="lg">
@@ -253,51 +317,56 @@ const Index = () => {
         </section>
 
         {/* Bestsellers - Scrollable */}
-        {bestsellers.length > 0 && (
-          <section className="py-24 lg:py-32">
-            <div className="container mx-auto px-6 lg:px-12">
-              <div className="flex items-end justify-between mb-16">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
-                    Most Loved
-                  </p>
-                  <h2 className="font-display text-4xl md:text-5xl text-foreground">
-                    Bestsellers
-                  </h2>
-                </div>
-                <div className="hidden md:flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => scroll(bestsellersScrollRef, 'left')}
-                    className="border-border/50 hover:border-primary hover:bg-primary/5"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon" 
-                    onClick={() => scroll(bestsellersScrollRef, 'right')}
-                    className="border-border/50 hover:border-primary hover:bg-primary/5"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+        <section className="py-24 lg:py-32">
+          <div className="container mx-auto px-6 lg:px-12">
+            <div className="flex items-end justify-between mb-16">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.5em] text-primary mb-4 font-medium">
+                  Most Loved
+                </p>
+                <h2 className="font-display text-4xl md:text-5xl text-foreground">
+                  Bestsellers
+                </h2>
               </div>
-              <div 
-                ref={bestsellersScrollRef}
-                className="flex gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6 snap-x snap-mandatory"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {bestsellers.map((candle, index) => (
+              <div className="hidden md:flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => scroll(bestsellersScrollRef, 'left')}
+                  className="border-border/50 hover:border-primary hover:bg-primary/5"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="icon" 
+                  onClick={() => scroll(bestsellersScrollRef, 'right')}
+                  className="border-border/50 hover:border-primary hover:bg-primary/5"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <div 
+              ref={bestsellersScrollRef}
+              className="flex gap-6 lg:gap-8 overflow-x-auto scrollbar-hide pb-4 -mx-6 px-6 snap-x snap-mandatory"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {bestsellersLoading ? (
+                // Loading skeletons
+                [...Array(4)].map((_, i) => <ProductCardSkeleton key={i} />)
+              ) : bestsellers && bestsellers.length > 0 ? (
+                bestsellers.map((candle, index) => (
                   <div key={candle.id} className="flex-shrink-0 w-[280px] sm:w-[300px] snap-start">
                     <CandleCard candle={candle} index={index} />
                   </div>
-                ))}
-              </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground">No bestsellers available yet.</p>
+              )}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
 
         {/* Collections Preview - Using Product Images */}
         <section className="py-24 lg:py-32 bg-secondary/20 border-y border-border/30">
@@ -311,30 +380,42 @@ const Index = () => {
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {collections.map((collection, index) => (
-                <Link
-                  key={collection.id}
-                  to={`/shop?collection=${collection.slug}`}
-                  className="group relative aspect-[3/4] overflow-hidden opacity-0 animate-fade-in"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <img
-                    src={collectionImages[collection.slug] || collection.image}
-                    alt={collection.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-90"
-                  />
-                  <div className="absolute inset-0 bg-background/40" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
-                    <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors duration-300">
-                      {collection.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                      {collection.description}
-                    </p>
-                  </div>
-                </Link>
-              ))}
+              {collectionsLoading ? (
+                // Loading skeletons
+                [...Array(4)].map((_, i) => <CollectionCardSkeleton key={i} />)
+              ) : collections && collections.length > 0 ? (
+                collections.slice(0, 4).map((collection, index) => (
+                  <Link
+                    key={collection.id}
+                    to={`/shop?collection=${collection.slug}`}
+                    className="group relative aspect-[3/4] overflow-hidden opacity-0 animate-fade-in"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    <img
+                      src={collectionImages[collection.slug] || collection.image || signatureCollection}
+                      alt={collection.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 brightness-90"
+                    />
+                    <div className="absolute inset-0 bg-background/40" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+                      <h3 className="font-display text-xl text-foreground group-hover:text-primary transition-colors duration-300">
+                        {collection.name}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                        {collection.description}
+                      </p>
+                      {collection.productCount !== undefined && collection.productCount > 0 && (
+                        <p className="text-[10px] text-primary/80 mt-2">
+                          {collection.productCount} Products
+                        </p>
+                      )}
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-muted-foreground col-span-4 text-center">No collections available.</p>
+              )}
             </div>
           </div>
         </section>

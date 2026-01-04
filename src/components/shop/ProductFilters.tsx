@@ -1,9 +1,16 @@
+/**
+ * Product Filters - WooCommerce Integrated
+ * 
+ * Uses categories from WooCommerce for the collections filter.
+ * Other filters (scent types, sizes) remain static as they're not
+ * typically stored in WooCommerce product attributes.
+ */
+
 import { useState } from "react";
-import { ChevronDown, X, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, X, SlidersHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { collections } from "@/data/candles";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/currency";
 import {
@@ -18,6 +25,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+
+// WooCommerce hooks
+import { useCategories } from "@/hooks/useWooCommerce";
 
 export interface FilterState {
   priceRange: [number, number];
@@ -37,6 +47,7 @@ interface ProductFiltersProps {
   maxPrice: number;
 }
 
+// Static filter options (these could be WooCommerce attributes in future)
 const scentTypes = [
   "Floral",
   "Woody",
@@ -52,18 +63,21 @@ const FilterSection = ({
   title,
   children,
   defaultOpen = true,
+  isLoading = false,
 }: {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  isLoading?: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger className="flex items-center justify-between w-full py-4 border-b border-border/30">
-        <span className="text-sm font-medium text-foreground uppercase tracking-wider">
+        <span className="text-sm font-medium text-foreground uppercase tracking-wider flex items-center gap-2">
           {title}
+          {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
         </span>
         <ChevronDown
           className={cn(
@@ -85,6 +99,9 @@ const FilterContent = ({
   minPrice,
   maxPrice,
 }: ProductFiltersProps) => {
+  // Fetch categories from WooCommerce
+  const { data: wcCategories, isLoading: categoriesLoading } = useCategories();
+
   const handlePriceChange = (value: number[]) => {
     onFiltersChange({ ...filters, priceRange: [value[0], value[1]] });
   };
@@ -143,22 +160,41 @@ const FilterContent = ({
         </div>
       </FilterSection>
 
-      <FilterSection title="Collection">
+      <FilterSection title="Collection" isLoading={categoriesLoading}>
         <div className="space-y-3">
-          {collections.map((col) => (
-            <label
-              key={col.slug}
-              className="flex items-center gap-3 cursor-pointer group"
-            >
-              <Checkbox
-                checked={filters.collections.includes(col.slug)}
-                onCheckedChange={() => handleCollectionToggle(col.slug)}
-              />
-              <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-                {col.name}
-              </span>
-            </label>
-          ))}
+          {categoriesLoading ? (
+            // Loading state
+            <div className="space-y-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-4 h-4 bg-secondary/50 rounded animate-pulse" />
+                  <div className="h-4 bg-secondary/50 rounded animate-pulse w-24" />
+                </div>
+              ))}
+            </div>
+          ) : wcCategories && wcCategories.length > 0 ? (
+            wcCategories.map((col) => (
+              <label
+                key={col.slug}
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <Checkbox
+                  checked={filters.collections.includes(col.slug)}
+                  onCheckedChange={() => handleCollectionToggle(col.slug)}
+                />
+                <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors flex-1">
+                  {col.name}
+                </span>
+                {col.productCount !== undefined && col.productCount > 0 && (
+                  <span className="text-xs text-muted-foreground/60">
+                    ({col.productCount})
+                  </span>
+                )}
+              </label>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No collections available</p>
+          )}
         </div>
       </FilterSection>
 

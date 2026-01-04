@@ -1,73 +1,71 @@
 /**
- * React Query Hooks for WooCommerce
+ * WooCommerce React Query Hooks
  * 
- * These hooks provide the same interface as your static data functions
- * but fetch from WooCommerce instead. Your components don't need to change!
- * 
- * Usage:
- * Replace: import { candles } from '@/data/candles'
- * With:    import { useProducts } from '@/hooks/useWooCommerce'
- *          const { data: candles, isLoading } = useProducts();
+ * Provides typed React Query hooks for all WooCommerce API operations.
+ * Uses the woocommerce.ts client and woocommerce-mapper.ts for type conversion.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getProducts,
   getProduct,
   getProductBySlug,
   getFeaturedProducts,
-  getProductsByCategory,
-  getOnSaleProducts,
-  searchProducts,
   getRelatedProducts,
   getCategories,
   getCategoryBySlug,
   createOrder,
   getOrder,
-  getOrders,
   validateCoupon,
-  getReviews,
-  createReview,
   isWooCommerceConfigured,
-} from '@/lib/woocommerce';
+  searchProducts,
+} from "@/lib/woocommerce";
 import {
   wcProductToCandle,
   wcProductsToCandles,
   wcCategoriesToCollections,
-  wcCategoryToCollection,
-} from '@/lib/woocommerce-mapper';
-import type { Candle, Collection } from '@/types/candle';
-import type { WCProductsQuery, WCAddress } from '@/types/woocommerce';
+} from "@/lib/woocommerce-mapper";
+import type { Candle, Collection } from "@/types/candle";
+import type { WCProductsQuery, WCAddress, WCOrder, WCCoupon } from "@/types/woocommerce";
 
-// Query keys for cache management
-export const queryKeys = {
-  products: ['products'] as const,
-  product: (id: number) => ['product', id] as const,
-  productBySlug: (slug: string) => ['product', 'slug', slug] as const,
-  featuredProducts: ['products', 'featured'] as const,
-  bestsellers: ['products', 'bestsellers'] as const,
-  productsByCategory: (slug: string) => ['products', 'category', slug] as const,
-  onSaleProducts: ['products', 'on-sale'] as const,
-  searchProducts: (term: string) => ['products', 'search', term] as const,
-  relatedProducts: (id: number) => ['products', 'related', id] as const,
-  categories: ['categories'] as const,
-  category: (slug: string) => ['category', slug] as const,
-  orders: ['orders'] as const,
-  order: (id: number) => ['order', id] as const,
-  reviews: (productId: number) => ['reviews', productId] as const,
-  coupon: (code: string) => ['coupon', code] as const,
+// ============================================
+// QUERY KEYS
+// ============================================
+
+export const wcQueryKeys = {
+  products: {
+    all: ["wc-products"] as const,
+    list: (params: WCProductsQuery) => ["wc-products", "list", params] as const,
+    detail: (id: number) => ["wc-products", "detail", id] as const,
+    bySlug: (slug: string) => ["wc-products", "slug", slug] as const,
+    featured: (limit: number) => ["wc-products", "featured", limit] as const,
+    bestsellers: (limit: number) => ["wc-products", "bestsellers", limit] as const,
+    related: (id: number, limit: number) => ["wc-products", "related", id, limit] as const,
+    search: (term: string, limit: number) => ["wc-products", "search", term, limit] as const,
+  },
+  categories: {
+    all: ["wc-categories"] as const,
+    detail: (id: number) => ["wc-categories", "detail", id] as const,
+    bySlug: (slug: string) => ["wc-categories", "slug", slug] as const,
+  },
+  orders: {
+    detail: (id: number) => ["wc-orders", "detail", id] as const,
+  },
+  coupons: {
+    validate: (code: string) => ["wc-coupons", "validate", code] as const,
+  },
 };
 
 // ============================================
-// PRODUCTS HOOKS
+// PRODUCT HOOKS
 // ============================================
 
 /**
- * Fetch all products (candles)
+ * Fetch all products with optional filters
  */
-export function useProducts(params?: WCProductsQuery) {
+export function useProducts(params: WCProductsQuery = {}) {
   return useQuery({
-    queryKey: [...queryKeys.products, params],
+    queryKey: wcQueryKeys.products.list(params),
     queryFn: async () => {
       const { products, total, totalPages } = await getProducts(params);
       return {
@@ -84,14 +82,14 @@ export function useProducts(params?: WCProductsQuery) {
 /**
  * Fetch a single product by ID
  */
-export function useProduct(id: number | undefined) {
+export function useProduct(id: number) {
   return useQuery({
-    queryKey: queryKeys.product(id!),
+    queryKey: wcQueryKeys.products.detail(id),
     queryFn: async () => {
-      const product = await getProduct(id!);
+      const product = await getProduct(id);
       return wcProductToCandle(product);
     },
-    enabled: !!id && isWooCommerceConfigured(),
+    enabled: isWooCommerceConfigured() && id > 0,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -101,12 +99,13 @@ export function useProduct(id: number | undefined) {
  */
 export function useProductBySlug(slug: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.productBySlug(slug!),
-    queryFn: async () => {
-      const product = await getProductBySlug(slug!);
+    queryKey: wcQueryKeys.products.bySlug(slug || ""),
+    queryFn: async (): Promise<Candle | null> => {
+      if (!slug) return null;
+      const product = await getProductBySlug(slug);
       return product ? wcProductToCandle(product) : null;
     },
-    enabled: !!slug && isWooCommerceConfigured(),
+    enabled: isWooCommerceConfigured() && Boolean(slug),
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -116,7 +115,7 @@ export function useProductBySlug(slug: string | undefined) {
  */
 export function useFeaturedProducts(limit = 8) {
   return useQuery({
-    queryKey: [...queryKeys.featuredProducts, limit],
+    queryKey: wcQueryKeys.products.featured(limit),
     queryFn: async () => {
       const products = await getFeaturedProducts(limit);
       return wcProductsToCandles(products);
@@ -127,61 +126,31 @@ export function useFeaturedProducts(limit = 8) {
 }
 
 /**
- * Fetch bestsellers (tagged as bestseller or high sales + featured)
+ * Fetch bestseller products
+ * Bestsellers are products tagged with 'bestseller' or have high sales + featured
  */
-export function useBestsellers(limit = 8) {
+export function useBestsellerProducts(limit = 8) {
   return useQuery({
-    queryKey: [...queryKeys.bestsellers, limit],
+    queryKey: wcQueryKeys.products.bestsellers(limit),
     queryFn: async () => {
       // First try to get products tagged as bestseller
       const { products } = await getProducts({
-        tag: 'bestseller',
         per_page: limit,
+        tag: 'bestseller',
         orderby: 'popularity',
         order: 'desc',
       });
 
-      if (products.length > 0) {
-        return wcProductsToCandles(products);
+      // If no tagged products, fall back to most popular featured products
+      if (products.length === 0) {
+        const { products: popularProducts } = await getProducts({
+          per_page: limit,
+          orderby: 'popularity',
+          order: 'desc',
+        });
+        return wcProductsToCandles(popularProducts);
       }
 
-      // Fallback: get most popular featured products
-      const featured = await getFeaturedProducts(limit * 2);
-      const sorted = featured.sort((a, b) => b.total_sales - a.total_sales);
-      return wcProductsToCandles(sorted.slice(0, limit));
-    },
-    enabled: isWooCommerceConfigured(),
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-/**
- * Fetch products by category
- */
-export function useProductsByCategory(categorySlug: string | undefined, params?: Omit<WCProductsQuery, 'category'>) {
-  return useQuery({
-    queryKey: [...queryKeys.productsByCategory(categorySlug!), params],
-    queryFn: async () => {
-      const { products, total, totalPages } = await getProductsByCategory(categorySlug!, params);
-      return {
-        candles: wcProductsToCandles(products),
-        total,
-        totalPages,
-      };
-    },
-    enabled: !!categorySlug && isWooCommerceConfigured(),
-    staleTime: 5 * 60 * 1000,
-  });
-}
-
-/**
- * Fetch products on sale
- */
-export function useOnSaleProducts(limit = 20) {
-  return useQuery({
-    queryKey: [...queryKeys.onSaleProducts, limit],
-    queryFn: async () => {
-      const products = await getOnSaleProducts(limit);
       return wcProductsToCandles(products);
     },
     enabled: isWooCommerceConfigured(),
@@ -190,85 +159,86 @@ export function useOnSaleProducts(limit = 20) {
 }
 
 /**
- * Search products
- */
-export function useSearchProducts(searchTerm: string, params?: Omit<WCProductsQuery, 'search'>) {
-  return useQuery({
-    queryKey: [...queryKeys.searchProducts(searchTerm), params],
-    queryFn: async () => {
-      const { products, total, totalPages } = await searchProducts(searchTerm, params);
-      return {
-        candles: wcProductsToCandles(products),
-        total,
-        totalPages,
-      };
-    },
-    enabled: searchTerm.length > 2 && isWooCommerceConfigured(),
-    staleTime: 30 * 1000, // 30 seconds for search results
-  });
-}
-
-/**
- * Fetch related products
+ * Fetch related products for a given product
  */
 export function useRelatedProducts(productId: number | undefined, limit = 4) {
   return useQuery({
-    queryKey: [...queryKeys.relatedProducts(productId!), limit],
+    queryKey: wcQueryKeys.products.related(productId || 0, limit),
     queryFn: async () => {
-      const products = await getRelatedProducts(productId!, limit);
+      if (!productId) return [];
+      const products = await getRelatedProducts(productId, limit);
       return wcProductsToCandles(products);
     },
-    enabled: !!productId && isWooCommerceConfigured(),
+    enabled: isWooCommerceConfigured() && Boolean(productId),
     staleTime: 5 * 60 * 1000,
   });
 }
 
+/**
+ * Search products by term
+ */
+export function useSearchProducts(searchTerm: string, limit = 10) {
+  return useQuery({
+    queryKey: wcQueryKeys.products.search(searchTerm, limit),
+    queryFn: async () => {
+      if (!searchTerm || searchTerm.length < 2) return [];
+      const { products } = await searchProducts(searchTerm, { per_page: limit });
+      return wcProductsToCandles(products);
+    },
+    enabled: isWooCommerceConfigured() && searchTerm.length >= 2,
+    staleTime: 2 * 60 * 1000, // 2 minutes for search results
+  });
+}
+
 // ============================================
-// CATEGORIES HOOKS
+// CATEGORY HOOKS
 // ============================================
 
 /**
- * Fetch all categories (collections)
+ * Fetch all categories
  */
 export function useCategories() {
   return useQuery({
-    queryKey: queryKeys.categories,
+    queryKey: wcQueryKeys.categories.all,
     queryFn: async () => {
-      const categories = await getCategories();
+      const categories = await getCategories({ hide_empty: true });
       return wcCategoriesToCollections(categories);
     },
     enabled: isWooCommerceConfigured(),
-    staleTime: 10 * 60 * 1000, // 10 minutes for categories
+    staleTime: 10 * 60 * 1000, // 10 minutes
   });
 }
 
 /**
- * Fetch a single category by slug
+ * Fetch a category by slug
  */
 export function useCategoryBySlug(slug: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.category(slug!),
-    queryFn: async () => {
-      const category = await getCategoryBySlug(slug!);
-      return category ? wcCategoryToCollection(category) : null;
+    queryKey: wcQueryKeys.categories.bySlug(slug || ""),
+    queryFn: async (): Promise<Collection | null> => {
+      if (!slug) return null;
+      const category = await getCategoryBySlug(slug);
+      if (!category) return null;
+      return wcCategoriesToCollections([category])[0];
     },
-    enabled: !!slug && isWooCommerceConfigured(),
+    enabled: isWooCommerceConfigured() && Boolean(slug),
     staleTime: 10 * 60 * 1000,
   });
 }
 
 // ============================================
-// ORDERS HOOKS
+// ORDER HOOKS
 // ============================================
 
 interface CreateOrderParams {
   billing: WCAddress;
   shipping: WCAddress;
-  lineItems: Array<{ productId: number; quantity: number }>;
-  paymentMethod?: string;
-  paymentMethodTitle?: string;
-  customerNote?: string;
-  couponCode?: string;
+  line_items: Array<{ product_id: number; quantity: number }>;
+  payment_method?: string;
+  payment_method_title?: string;
+  set_paid?: boolean;
+  customer_note?: string;
+  coupon_lines?: Array<{ code: string }>;
 }
 
 /**
@@ -278,23 +248,12 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: CreateOrderParams) => {
-      const order = await createOrder({
-        billing: params.billing,
-        shipping: params.shipping,
-        line_items: params.lineItems.map(item => ({
-          product_id: item.productId,
-          quantity: item.quantity,
-        })),
-        payment_method: params.paymentMethod || 'cod',
-        payment_method_title: params.paymentMethodTitle || 'Cash on Delivery',
-        customer_note: params.customerNote,
-        coupon_lines: params.couponCode ? [{ code: params.couponCode }] : undefined,
-      });
-      return order;
+    mutationFn: async (orderData: CreateOrderParams) => {
+      return createOrder(orderData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
+      // Invalidate products to refresh stock levels
+      queryClient.invalidateQueries({ queryKey: wcQueryKeys.products.all });
     },
   });
 }
@@ -302,80 +261,28 @@ export function useCreateOrder() {
 /**
  * Fetch order by ID
  */
-export function useOrder(id: number | undefined) {
+export function useOrder(id: number) {
   return useQuery({
-    queryKey: queryKeys.order(id!),
-    queryFn: () => getOrder(id!),
-    enabled: !!id && isWooCommerceConfigured(),
-  });
-}
-
-/**
- * Fetch user's orders
- */
-export function useOrders(customerId?: number) {
-  return useQuery({
-    queryKey: [...queryKeys.orders, customerId],
-    queryFn: () => getOrders(customerId ? { customer: customerId } : {}),
-    enabled: isWooCommerceConfigured(),
+    queryKey: wcQueryKeys.orders.detail(id),
+    queryFn: async () => {
+      return getOrder(id);
+    },
+    enabled: isWooCommerceConfigured() && id > 0,
+    staleTime: 1 * 60 * 1000, // 1 minute
   });
 }
 
 // ============================================
-// COUPONS HOOKS
+// COUPON HOOKS
 // ============================================
 
 /**
  * Validate a coupon code
  */
-export function useValidateCoupon(code: string | undefined) {
-  return useQuery({
-    queryKey: queryKeys.coupon(code!),
-    queryFn: () => validateCoupon(code!),
-    enabled: !!code && code.length > 2 && isWooCommerceConfigured(),
-    staleTime: 60 * 1000, // 1 minute
-    retry: false,
-  });
-}
-
-// ============================================
-// REVIEWS HOOKS
-// ============================================
-
-/**
- * Fetch product reviews
- */
-export function useProductReviews(productId: number | undefined) {
-  return useQuery({
-    queryKey: queryKeys.reviews(productId!),
-    queryFn: () => getReviews({ product: [productId!] }),
-    enabled: !!productId && isWooCommerceConfigured(),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-}
-
-/**
- * Create a product review
- */
-export function useCreateReview() {
-  const queryClient = useQueryClient();
-
+export function useValidateCoupon() {
   return useMutation({
-    mutationFn: (params: {
-      productId: number;
-      review: string;
-      reviewer: string;
-      reviewerEmail: string;
-      rating: number;
-    }) => createReview({
-      product_id: params.productId,
-      review: params.review,
-      reviewer: params.reviewer,
-      reviewer_email: params.reviewerEmail,
-      rating: params.rating,
-    }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.reviews(variables.productId) });
+    mutationFn: async (code: string) => {
+      return validateCoupon(code);
     },
   });
 }
@@ -385,16 +292,32 @@ export function useCreateReview() {
 // ============================================
 
 /**
- * Prefetch product data for faster navigation
+ * Prefetch products for faster navigation
  */
-export function usePrefetchProduct() {
-  const queryClient = useQueryClient();
+export function usePrefetchProducts(queryClient: ReturnType<typeof useQueryClient>) {
+  return (params: WCProductsQuery = {}) => {
+    queryClient.prefetchQuery({
+      queryKey: wcQueryKeys.products.list(params),
+      queryFn: async () => {
+        const { products, total, totalPages } = await getProducts(params);
+        return {
+          candles: wcProductsToCandles(products),
+          total,
+          totalPages,
+        };
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+}
 
-  return async (slug: string) => {
-    if (!isWooCommerceConfigured()) return;
-
-    await queryClient.prefetchQuery({
-      queryKey: queryKeys.productBySlug(slug),
+/**
+ * Prefetch a single product by slug
+ */
+export function usePrefetchProductBySlug(queryClient: ReturnType<typeof useQueryClient>) {
+  return (slug: string) => {
+    queryClient.prefetchQuery({
+      queryKey: wcQueryKeys.products.bySlug(slug),
       queryFn: async () => {
         const product = await getProductBySlug(slug);
         return product ? wcProductToCandle(product) : null;
@@ -405,18 +328,29 @@ export function usePrefetchProduct() {
 }
 
 // ============================================
-// HELPER FUNCTIONS
+// EXPORT ALL HOOKS
 // ============================================
 
-/**
- * Get min/max price from products
- */
-export function useProductPriceRange() {
-  const { data } = useProducts({ per_page: 1, orderby: 'price', order: 'asc' });
-  const { data: maxData } = useProducts({ per_page: 1, orderby: 'price', order: 'desc' });
-
-  const minPrice = data?.candles[0]?.price || 0;
-  const maxPrice = maxData?.candles[0]?.price || 10000;
-
-  return { minPrice, maxPrice };
-}
+export default {
+  // Products
+  useProducts,
+  useProduct,
+  useProductBySlug,
+  useFeaturedProducts,
+  useBestsellerProducts,
+  useRelatedProducts,
+  useSearchProducts,
+  // Categories
+  useCategories,
+  useCategoryBySlug,
+  // Orders
+  useCreateOrder,
+  useOrder,
+  // Coupons
+  useValidateCoupon,
+  // Utils
+  usePrefetchProducts,
+  usePrefetchProductBySlug,
+  // Keys
+  wcQueryKeys,
+};
