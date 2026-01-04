@@ -17,71 +17,37 @@ import { trackOrder, trackCartUpdate, trackPaymentMethodSelected } from "@/lib/m
 // SECURITY UTILITIES
 // =============================================================================
 
-/**
- * Sanitize string for Cashfree API - only alphanumeric, underscore, hyphen
- * Prevents injection and API errors
- */
 const sanitizeAlphanumeric = (str: string, maxLength: number = 50): string => {
   if (!str || typeof str !== 'string') return '';
-  return str
-    .replace(/[^a-zA-Z0-9_-]/g, '_')
-    .substring(0, maxLength)
-    .replace(/^_+|_+$/g, ''); // Trim leading/trailing underscores
+  return str.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, maxLength).replace(/^_+|_+$/g, '');
 };
 
-/**
- * Sanitize email - basic validation and trimming
- */
 const sanitizeEmail = (email: string): string => {
   if (!email || typeof email !== 'string') return '';
   return email.trim().toLowerCase().substring(0, 254);
 };
 
-/**
- * Sanitize phone - extract only digits, ensure 10 digits for India
- */
 const sanitizePhone = (phone: string): string => {
   if (!phone || typeof phone !== 'string') return '';
   const digits = phone.replace(/\D/g, '');
-  // Get last 10 digits (removes country code if present)
   return digits.slice(-10);
 };
 
-/**
- * Sanitize name - allow letters, spaces, hyphens, apostrophes
- */
 const sanitizeName = (name: string, maxLength: number = 100): string => {
   if (!name || typeof name !== 'string') return '';
-  return name
-    .replace(/[^a-zA-Z\s\-'\.]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .substring(0, maxLength);
+  return name.replace(/[^a-zA-Z\s\-'\.]/g, '').replace(/\s+/g, ' ').trim().substring(0, maxLength);
 };
 
-/**
- * Sanitize address - allow common address characters
- */
 const sanitizeAddress = (address: string, maxLength: number = 200): string => {
   if (!address || typeof address !== 'string') return '';
-  return address
-    .replace(/[<>\"'`]/g, '') // Remove potential XSS chars
-    .replace(/\s+/g, ' ')
-    .trim()
-    .substring(0, maxLength);
+  return address.replace(/[<>\"'`]/g, '').replace(/\s+/g, ' ').trim().substring(0, maxLength);
 };
 
-/**
- * Sanitize PIN code - only digits, exactly 6 for India
- */
 const sanitizePincode = (pincode: string): string => {
   if (!pincode || typeof pincode !== 'string') return '';
   return pincode.replace(/\D/g, '').substring(0, 6);
 };
 
-/**
- * Generate secure customer ID for Cashfree
- */
 const generateCustomerId = (email: string): string => {
   const emailPrefix = sanitizeAlphanumeric(email.split('@')[0], 20);
   const timestamp = Date.now();
@@ -187,18 +153,30 @@ const loadCashfreeScript = (): Promise<boolean> => {
 };
 
 // =============================================================================
-// CASHFREE API - WITH PROPER ERROR HANDLING
+// CASHFREE API TYPES
 // =============================================================================
 
 interface CashfreeOrderResponse {
   payment_session_id: string;
   order_id: string;
+  cf_order_id: string;
 }
 
-interface CashfreeError {
-  code: string;
-  message: string;
+interface CashfreeCartItem {
+  item_id: string;
+  item_name: string;
+  item_description?: string;
+  item_image_url?: string;
+  item_details_url?: string;
+  item_original_unit_price: number;
+  item_discounted_unit_price: number;
+  item_quantity: number;
+  item_currency: string;
 }
+
+// =============================================================================
+// CASHFREE API - CREATE ORDER WITH CART_DETAILS AT ROOT
+// =============================================================================
 
 const createCashfreeOrder = async (
   orderId: number,
@@ -209,13 +187,8 @@ const createCashfreeOrder = async (
     customerPhone: string;
     customerName: string;
   },
-  cartItems: Array<{
-    name: string;
-    quantity: number;
-    price: number;
-    sku?: string;
-  }>,
-  shippingCost: number
+  cartItems: CashfreeCartItem[],
+  shippingCharges: number
 ): Promise<{ success: true; data: CashfreeOrderResponse } | { success: false; error: string }> => {
   try {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -224,28 +197,13 @@ const createCashfreeOrder = async (
       return { success: false, error: "Payment system not configured. Please contact support." };
     }
 
-    // Validate amount
     if (!amount || amount <= 0) {
       return { success: false, error: "Invalid order amount." };
     }
 
-    // Validate customer details
     if (!customerDetails.customerEmail || !customerDetails.customerPhone) {
       return { success: false, error: "Customer details are incomplete." };
     }
-
-    // Build cart details for Cashfree checkout display
-    const cart_details = {
-      cart_name: `Scentora Order #${orderId}`,
-      cart_items: cartItems.map(item => ({
-        item_name: item.name.substring(0, 50), // Cashfree limit
-        item_sku: item.sku || `PROD-${orderId}`,
-        item_quantity: item.quantity,
-        item_unit_price: Number(item.price.toFixed(2)),
-      })),
-      shipping_charge: Number(shippingCost.toFixed(2)),
-      tax_amount: 0,
-    };
 
     const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/create-order`, {
       method: "POST",
@@ -267,14 +225,17 @@ const createCashfreeOrder = async (
           notify_url: `${backendUrl}/wp-json/scentora/v1/cashfree/webhook`,
         },
         order_note: `Scentora Order #${orderId}`,
-        cart_details: cart_details,
+        // cart_details at ROOT level (plugin will pass it correctly to Cashfree)
+        cart_details: {
+          cart_items: cartItems,
+          shipping_charges: shippingCharges,
+        },
       }),
     });
 
     const data = await response.json();
     
     if (!response.ok) {
-      // Parse error message from backend
       const errorMessage = data.message || "Payment initialization failed.";
       console.error("Cashfree API error:", data);
       return { success: false, error: errorMessage };
@@ -297,6 +258,32 @@ const createCashfreeOrder = async (
 };
 
 // =============================================================================
+// CASHFREE API - VERIFY PAYMENT STATUS
+// =============================================================================
+
+const verifyCashfreePayment = async (cfOrderId: string): Promise<{ success: boolean; status: string }> => {
+  try {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/verify/${cfOrderId}`);
+    const data = await response.json();
+    
+    console.log("Payment verification response:", data);
+    
+    if (response.ok) {
+      // Cashfree order statuses: ACTIVE, PAID, EXPIRED
+      return { 
+        success: data.order_status === 'PAID', 
+        status: data.order_status 
+      };
+    }
+    return { success: false, status: 'ERROR' };
+  } catch (error) {
+    console.error("Payment verification error:", error);
+    return { success: false, status: 'ERROR' };
+  }
+};
+
+// =============================================================================
 // MAIN COMPONENT
 // =============================================================================
 
@@ -312,7 +299,6 @@ const Checkout = () => {
 
   const createOrder = useCreateOrder();
 
-  // Calculate shipping
   const shippingCost = subtotal >= 2000 ? 0 : 99;
   const total = subtotal + shippingCost;
 
@@ -345,20 +331,18 @@ const Checkout = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({ ...prev, [id]: value }));
-    // Clear error when user starts typing
     if (formErrors[id]) {
       setFormErrors((prev) => ({ ...prev, [id]: "" }));
     }
   };
 
   // =============================================================================
-  // VALIDATION - COMPREHENSIVE
+  // VALIDATION
   // =============================================================================
 
   const validateForm = (): boolean => {
     const errors: FormErrors = {};
     
-    // Email validation
     const email = sanitizeEmail(formData.email);
     if (!email) {
       errors.email = "Email is required";
@@ -366,7 +350,6 @@ const Checkout = () => {
       errors.email = "Please enter a valid email address";
     }
 
-    // Phone validation
     const phone = sanitizePhone(formData.phone);
     if (!phone) {
       errors.phone = "Phone number is required";
@@ -376,7 +359,6 @@ const Checkout = () => {
       errors.phone = "Please enter a valid Indian mobile number";
     }
 
-    // Name validation
     const firstName = sanitizeName(formData.firstName);
     const lastName = sanitizeName(formData.lastName);
     if (!firstName) {
@@ -390,7 +372,6 @@ const Checkout = () => {
       errors.lastName = "Last name must be at least 2 characters";
     }
 
-    // Address validation
     const address = sanitizeAddress(formData.address);
     if (!address) {
       errors.address = "Address is required";
@@ -398,19 +379,16 @@ const Checkout = () => {
       errors.address = "Please enter a complete address";
     }
 
-    // City validation
     const city = sanitizeName(formData.city);
     if (!city) {
       errors.city = "City is required";
     }
 
-    // State validation
     const state = sanitizeName(formData.state);
     if (!state) {
       errors.state = "State is required";
     }
 
-    // Pincode validation
     const pincode = sanitizePincode(formData.pincode);
     if (!pincode) {
       errors.pincode = "PIN code is required";
@@ -421,7 +399,6 @@ const Checkout = () => {
     setFormErrors(errors);
 
     if (Object.keys(errors).length > 0) {
-      // Show first error as toast
       const firstError = Object.values(errors)[0];
       toast.error(firstError);
       return false;
@@ -431,11 +408,10 @@ const Checkout = () => {
   };
 
   // =============================================================================
-  // CREATE WOOCOMMERCE ORDER - SANITIZED
+  // CREATE WOOCOMMERCE ORDER
   // =============================================================================
 
   const createWooCommerceOrder = async () => {
-    // Sanitize all data before sending
     const sanitizedData = {
       first_name: sanitizeName(formData.firstName),
       last_name: sanitizeName(formData.lastName),
@@ -544,7 +520,7 @@ const Checkout = () => {
   };
 
   // =============================================================================
-  // CASHFREE PAYMENT HANDLER - FIXED
+  // CASHFREE PAYMENT HANDLER - WITH PROPER VERIFICATION
   // =============================================================================
 
   const handleCashfreePayment = async (orderId: number): Promise<{ success: boolean; error?: string }> => {
@@ -557,7 +533,6 @@ const Checkout = () => {
 
     setProcessingStep("Creating payment session...");
 
-    // Create sanitized customer details
     const customerDetails = {
       customerId: generateCustomerId(formData.email),
       customerEmail: sanitizeEmail(formData.email),
@@ -565,12 +540,17 @@ const Checkout = () => {
       customerName: `${sanitizeName(formData.firstName)} ${sanitizeName(formData.lastName)}`.trim(),
     };
 
-    // Prepare cart items for Cashfree display
-    const cartItems = items.map(item => ({
-      name: item.candle.name,
-      quantity: item.quantity,
-      price: item.candle.price,
-      sku: `SCNT-${item.candle.id}`,
+    // Build cart items with CORRECT Cashfree structure
+    const cartItems: CashfreeCartItem[] = items.map(item => ({
+      item_id: `SCNT-${item.candle.id}`,
+      item_name: item.candle.name.substring(0, 50),
+      item_description: (item.candle.collection || 'Luxury Candle').substring(0, 200),
+      item_image_url: item.candle.images?.[0] || '',
+      item_details_url: `${window.location.origin}/candle/${item.candle.id}`,
+      item_original_unit_price: item.candle.price,
+      item_discounted_unit_price: item.candle.price,
+      item_quantity: item.quantity,
+      item_currency: "INR",
     }));
 
     const result = await createCashfreeOrder(orderId, total, customerDetails, cartItems, shippingCost);
@@ -581,6 +561,10 @@ const Checkout = () => {
 
     setProcessingStep("Opening payment window...");
 
+    // Store cf_order_id for verification
+    const cfOrderId = result.data.order_id;
+    console.log("Cashfree order created:", cfOrderId);
+
     return new Promise((resolve) => {
       try {
         const cashfree = window.Cashfree({
@@ -590,11 +574,10 @@ const Checkout = () => {
         cashfree.checkout({
           paymentSessionId: result.data.payment_session_id,
           redirectTarget: "_modal",
-        }).then((checkoutResult: any) => {
-          // Log for debugging
+        }).then(async (checkoutResult: any) => {
           console.log("Cashfree checkout result:", checkoutResult);
 
-          // Handle error case
+          // CASE 1: Explicit error from SDK
           if (checkoutResult.error) {
             console.error("Cashfree payment error:", checkoutResult.error);
             resolve({ 
@@ -604,21 +587,54 @@ const Checkout = () => {
             return;
           }
           
-          // Handle paymentDetails case - WITH NULL CHECK FIX
-          if (checkoutResult.paymentDetails) {
-            const status = checkoutResult.paymentDetails?.paymentStatus;
+          // CASE 2: paymentDetails with explicit paymentStatus
+          if (checkoutResult.paymentDetails?.paymentStatus) {
+            const status = checkoutResult.paymentDetails.paymentStatus;
+            console.log("Payment status from SDK:", status);
             
             if (status === "SUCCESS") {
               resolve({ success: true });
-            } else if (status) {
-              // Status exists but is not SUCCESS
+            } else {
               resolve({ 
                 success: false, 
                 error: `Payment ${status.toLowerCase()}. Please try again.` 
               });
+            }
+            return;
+          }
+          
+          // CASE 3: "Payment finished. Check status." - VERIFY VIA API
+          if (checkoutResult.paymentDetails?.paymentMessage) {
+            console.log("Payment message received, verifying via API...");
+            setProcessingStep("Verifying payment status...");
+            
+            // Wait for payment to process on Cashfree's end
+            await new Promise(r => setTimeout(r, 2000));
+            
+            // Verify payment status via API
+            const verification = await verifyCashfreePayment(cfOrderId);
+            console.log("Verification result:", verification);
+            
+            if (verification.success || verification.status === 'PAID') {
+              resolve({ success: true });
+            } else if (verification.status === 'ACTIVE') {
+              // Payment still pending - might need more time
+              setProcessingStep("Payment processing, please wait...");
+              await new Promise(r => setTimeout(r, 3000));
+              
+              // Try verification again
+              const retryVerification = await verifyCashfreePayment(cfOrderId);
+              console.log("Retry verification result:", retryVerification);
+              
+              if (retryVerification.success || retryVerification.status === 'PAID') {
+                resolve({ success: true });
+              } else {
+                resolve({ 
+                  success: false, 
+                  error: "Payment is still being processed. Please check your order status or try again." 
+                });
+              }
             } else {
-              // paymentDetails exists but paymentStatus is undefined
-              // This happens when modal is closed without completing payment
               resolve({ 
                 success: false, 
                 error: "Payment was not completed. Please try again." 
@@ -627,14 +643,25 @@ const Checkout = () => {
             return;
           }
           
-          // Handle redirect case (for some payment methods)
+          // CASE 4: Redirect happened (unlikely with modal)
           if (checkoutResult.redirect) {
+            console.log("Redirect detected");
             resolve({ success: true });
             return;
           }
           
-          // Default case - modal closed without action
-          resolve({ success: false, error: "Payment was cancelled." });
+          // CASE 5: Modal closed without payment info - verify anyway
+          console.log("No explicit status, verifying payment...");
+          setProcessingStep("Checking payment status...");
+          
+          await new Promise(r => setTimeout(r, 1500));
+          const finalVerification = await verifyCashfreePayment(cfOrderId);
+          
+          if (finalVerification.success || finalVerification.status === 'PAID') {
+            resolve({ success: true });
+          } else {
+            resolve({ success: false, error: "Payment was cancelled or not completed." });
+          }
           
         }).catch((error: any) => {
           console.error("Cashfree checkout error:", error);
@@ -648,25 +675,22 @@ const Checkout = () => {
   };
 
   // =============================================================================
-  // FORM SUBMISSION - WITH PROPER ERROR HANDLING
+  // FORM SUBMISSION
   // =============================================================================
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPaymentError(null);
 
-    // Validate form first
     if (!validateForm()) {
       return;
     }
 
-    // Check WooCommerce configuration
     if (!isWooCommerceConfigured()) {
       toast.error("Store is not configured. Please contact support.");
       return;
     }
 
-    // Check if online payment is selected but not configured
     if (paymentMethod === "cashfree" && !PAYMENT_CONFIG.cashfree.enabled) {
       toast.error("Online payment is not available. Please select another payment method.");
       return;
@@ -683,13 +707,10 @@ const Checkout = () => {
     let order: any = null;
 
     try {
-      // Step 1: Create WooCommerce order
       order = await createWooCommerceOrder();
-      console.log("Order created:", order.id);
+      console.log("WooCommerce order created:", order.id);
 
-      // Step 2: Process payment based on method
       if (paymentMethod === "cod") {
-        // COD - Order created, proceed to confirmation
         setProcessingStep("Confirming order...");
         trackOrderInMatomo(order.id);
         toast.success("Order placed successfully!");
@@ -698,7 +719,6 @@ const Checkout = () => {
         return;
       }
 
-      // Online payment
       setProcessingStep("Processing payment...");
       
       let paymentResult: { success: boolean; error?: string };
@@ -725,7 +745,6 @@ const Checkout = () => {
     } catch (error: any) {
       console.error("Checkout error:", error);
       
-      // Determine user-friendly error message
       let errorMessage = "An error occurred. Please try again.";
       
       if (error.message?.includes('network') || error.message?.includes('fetch')) {
@@ -981,7 +1000,7 @@ const Checkout = () => {
                     </label>
                   )}
 
-                  {/* Razorpay Option - Show only if Cashfree is disabled */}
+                  {/* Razorpay Option */}
                   {PAYMENT_CONFIG.razorpay.enabled && !PAYMENT_CONFIG.cashfree.enabled && (
                     <label className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "razorpay" ? "border-primary bg-primary/5" : "border-border/30 hover:border-border"} ${isProcessing ? "opacity-50 cursor-not-allowed" : ""}`}>
                       <input 
