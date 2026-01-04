@@ -544,7 +544,7 @@ const Checkout = () => {
   };
 
   // =============================================================================
-  // CASHFREE PAYMENT HANDLER
+  // CASHFREE PAYMENT HANDLER - FIXED
   // =============================================================================
 
   const handleCashfreePayment = async (orderId: number): Promise<{ success: boolean; error?: string }> => {
@@ -591,26 +591,51 @@ const Checkout = () => {
           paymentSessionId: result.data.payment_session_id,
           redirectTarget: "_modal",
         }).then((checkoutResult: any) => {
+          // Log for debugging
+          console.log("Cashfree checkout result:", checkoutResult);
+
+          // Handle error case
           if (checkoutResult.error) {
             console.error("Cashfree payment error:", checkoutResult.error);
             resolve({ 
               success: false, 
               error: checkoutResult.error.message || "Payment failed. Please try again." 
             });
-          } else if (checkoutResult.paymentDetails) {
-            if (checkoutResult.paymentDetails.paymentStatus === "SUCCESS") {
+            return;
+          }
+          
+          // Handle paymentDetails case - WITH NULL CHECK FIX
+          if (checkoutResult.paymentDetails) {
+            const status = checkoutResult.paymentDetails?.paymentStatus;
+            
+            if (status === "SUCCESS") {
               resolve({ success: true });
-            } else {
+            } else if (status) {
+              // Status exists but is not SUCCESS
               resolve({ 
                 success: false, 
-                error: `Payment ${checkoutResult.paymentDetails.paymentStatus.toLowerCase()}. Please try again.` 
+                error: `Payment ${status.toLowerCase()}. Please try again.` 
+              });
+            } else {
+              // paymentDetails exists but paymentStatus is undefined
+              // This happens when modal is closed without completing payment
+              resolve({ 
+                success: false, 
+                error: "Payment was not completed. Please try again." 
               });
             }
-          } else if (checkoutResult.redirect) {
-            resolve({ success: true });
-          } else {
-            resolve({ success: false, error: "Payment was cancelled." });
+            return;
           }
+          
+          // Handle redirect case (for some payment methods)
+          if (checkoutResult.redirect) {
+            resolve({ success: true });
+            return;
+          }
+          
+          // Default case - modal closed without action
+          resolve({ success: false, error: "Payment was cancelled." });
+          
         }).catch((error: any) => {
           console.error("Cashfree checkout error:", error);
           resolve({ success: false, error: "Payment failed. Please try again." });
