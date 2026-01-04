@@ -172,6 +172,15 @@ interface CashfreeOrderResponse {
   order_id: string;
 }
 
+interface CashfreeCartItem {
+  item_id: string;
+  item_name: string;
+  item_original_unit_price: number;
+  item_quantity: number;
+  item_image_url?: string;
+  item_details_url?: string;
+}
+
 const createCashfreeOrder = async (
   orderId: number,
   amount: number,
@@ -181,12 +190,7 @@ const createCashfreeOrder = async (
     customerPhone: string;
     customerName: string;
   },
-  cartItems: Array<{
-    name: string;
-    quantity: number;
-    price: number;
-    sku?: string;
-  }>,
+  cartItems: CashfreeCartItem[],
   shippingCost: number
 ): Promise<{ success: true; data: CashfreeOrderResponse } | { success: false; error: string }> => {
   try {
@@ -204,17 +208,21 @@ const createCashfreeOrder = async (
       return { success: false, error: "Customer details are incomplete." };
     }
 
-    const cart_details = {
+    // Build cart_details with correct Cashfree field names
+    const cart_details: {
+      cart_name: string;
+      cart_items: CashfreeCartItem[];
+      shipping_charges?: number;
+      tax_amount?: number;
+    } = {
       cart_name: `Scentora Order #${orderId}`,
-      cart_items: cartItems.map(item => ({
-        item_name: item.name.substring(0, 50),
-        item_sku: item.sku || `PROD-${orderId}`,
-        item_quantity: item.quantity,
-        item_unit_price: Number(item.price.toFixed(2)),
-      })),
-      shipping_charge: Number(shippingCost.toFixed(2)),
-      tax_amount: 0,
+      cart_items: cartItems,
     };
+
+    // Only add shipping_charges if > 0
+    if (shippingCost > 0) {
+      cart_details.shipping_charges = Number(shippingCost.toFixed(2));
+    }
 
     const response = await fetch(`${backendUrl}/wp-json/scentora/v1/cashfree/create-order`, {
       method: "POST",
@@ -244,7 +252,6 @@ const createCashfreeOrder = async (
     
     if (!response.ok) {
       const errorMessage = data.message || "Payment initialization failed.";
-      console.error("Cashfree API error:", data);
       return { success: false, error: errorMessage };
     }
     
@@ -254,8 +261,6 @@ const createCashfreeOrder = async (
 
     return { success: true, data };
   } catch (error) {
-    console.error("Cashfree order creation error:", error);
-    
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return { success: false, error: "Unable to connect to payment server. Please check your internet connection." };
     }
@@ -413,11 +418,6 @@ const Checkout = () => {
     const suspiciousItems = items.filter(item => item.candle.id < 10);
     
     if (suspiciousItems.length > 0) {
-      console.error("[Checkout] Cart contains products with invalid IDs:", suspiciousItems.map(i => ({
-        id: i.candle.id,
-        name: i.candle.name,
-      })));
-      
       toast.error("Your cart contains invalid products. Please clear your cart and add products again.");
       return false;
     }
@@ -448,13 +448,6 @@ const Checkout = () => {
       razorpay: { method: "razorpay", title: "Razorpay" },
       cod: { method: "cod", title: "Cash on Delivery" },
     };
-
-    // Log the line items being sent for debugging
-    console.log("[Checkout] Creating order with line items:", items.map(item => ({
-      productId: item.candle.id,
-      name: item.candle.name,
-      quantity: item.quantity,
-    })));
 
     const order = await createOrder.mutateAsync({
       billing: sanitizedData,
@@ -509,7 +502,6 @@ const Checkout = () => {
         name: "Scentora",
         description: `Order #${orderId}`,
         handler: function (response: any) {
-          console.log("Razorpay payment successful:", response);
           resolve({ success: true });
         },
         prefill: {
@@ -530,7 +522,6 @@ const Checkout = () => {
       try {
         const razorpay = new window.Razorpay(options);
         razorpay.on('payment.failed', function (response: any) {
-          console.error("Razorpay payment failed:", response.error);
           resolve({ 
             success: false, 
             error: response.error?.description || "Payment failed. Please try again." 
@@ -538,7 +529,6 @@ const Checkout = () => {
         });
         razorpay.open();
       } catch (error) {
-        console.error("Razorpay initialization error:", error);
         resolve({ success: false, error: "Failed to initialize payment. Please try again." });
       }
     });
@@ -565,12 +555,28 @@ const Checkout = () => {
       customerName: `${sanitizeName(formData.firstName)} ${sanitizeName(formData.lastName)}`.trim(),
     };
 
-    const cartItems = items.map(item => ({
-      name: item.candle.name,
-      quantity: item.quantity,
-      price: item.candle.price,
-      sku: `SCNT-${item.candle.id}`,
-    }));
+    // Build cart items with correct Cashfree field names
+    const cartItems: CashfreeCartItem[] = items.map(item => {
+      const cartItem: CashfreeCartItem = {
+        item_id: item.candle.sku || `SCNT-${item.candle.id}`,
+        item_name: item.candle.name.substring(0, 50),
+        item_original_unit_price: Number(item.candle.price.toFixed(2)),
+        item_quantity: item.quantity,
+      };
+      
+      // Add image URL if available (must be absolute HTTPS URL)
+      if (item.candle.images?.[0]) {
+        const imageUrl = item.candle.images[0];
+        if (imageUrl.startsWith('http')) {
+          cartItem.item_image_url = imageUrl;
+        }
+      }
+      
+      // Add product details URL
+      cartItem.item_details_url = `${window.location.origin}/product/${item.candle.id}`;
+      
+      return cartItem;
+    });
 
     const result = await createCashfreeOrder(orderId, total, customerDetails, cartItems, shippingCost);
 
@@ -590,10 +596,8 @@ const Checkout = () => {
           paymentSessionId: result.data.payment_session_id,
           redirectTarget: "_modal",
         }).then((checkoutResult: any) => {
-          console.log("Cashfree checkout result:", checkoutResult);
-
+          // Handle different result scenarios
           if (checkoutResult.error) {
-            console.error("Cashfree payment error:", checkoutResult.error);
             resolve({ 
               success: false, 
               error: checkoutResult.error.message || "Payment failed. Please try again." 
@@ -603,15 +607,35 @@ const Checkout = () => {
           
           if (checkoutResult.paymentDetails) {
             const status = checkoutResult.paymentDetails?.paymentStatus;
+            const message = checkoutResult.paymentDetails?.paymentMessage;
             
             if (status === "SUCCESS") {
               resolve({ success: true });
+            } else if (status === "FAILED" || status === "CANCELLED" || status === "VOID") {
+              resolve({ 
+                success: false, 
+                error: `Payment ${status.toLowerCase()}. Please try again.` 
+              });
+            } else if (status === "PENDING" || status === "USER_DROPPED") {
+              // Payment not completed - user closed modal or payment is pending
+              resolve({ 
+                success: false, 
+                error: "Payment was not completed. Please try again." 
+              });
+            } else if (message && message.includes("Check status")) {
+              // "Payment finished. Check status." - need to verify with backend
+              // For now, treat as pending/incomplete
+              resolve({ 
+                success: false, 
+                error: "Payment status is uncertain. Please check your order status or try again." 
+              });
             } else if (status) {
               resolve({ 
                 success: false, 
                 error: `Payment ${status.toLowerCase()}. Please try again.` 
               });
             } else {
+              // paymentDetails exists but no clear status
               resolve({ 
                 success: false, 
                 error: "Payment was not completed. Please try again." 
@@ -625,14 +649,13 @@ const Checkout = () => {
             return;
           }
           
+          // No error, no paymentDetails, no redirect - user likely closed modal
           resolve({ success: false, error: "Payment was cancelled." });
           
         }).catch((error: any) => {
-          console.error("Cashfree checkout error:", error);
           resolve({ success: false, error: "Payment failed. Please try again." });
         });
       } catch (error) {
-        console.error("Cashfree initialization error:", error);
         resolve({ success: false, error: "Failed to initialize payment. Please try again." });
       }
     });
@@ -687,7 +710,6 @@ const Checkout = () => {
 
     try {
       order = await createWooCommerceOrder();
-      console.log("[Checkout] Order created:", order.id);
 
       if (paymentMethod === "cod") {
         setProcessingStep("Confirming order...");
@@ -722,8 +744,6 @@ const Checkout = () => {
       }
 
     } catch (error: any) {
-      console.error("[Checkout] Error:", error);
-      
       let errorMessage = "An error occurred. Please try again.";
       
       if (error.message?.includes('network') || error.message?.includes('fetch')) {
@@ -1073,7 +1093,6 @@ const Checkout = () => {
                       <p className="text-[9px] uppercase tracking-[0.2em] text-primary/80">{item.candle.collection}</p>
                       <p className="font-display text-foreground">{item.candle.name}</p>
                       <p className="text-xs text-muted-foreground">{item.candle.size}</p>
-                      <p className="text-[10px] text-muted-foreground/70">ID: {item.candle.id}</p>
                     </div>
                     <p className="text-sm font-medium text-foreground">{formatPrice(item.candle.price * item.quantity)}</p>
                   </div>
