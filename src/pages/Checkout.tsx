@@ -688,7 +688,7 @@ const Checkout = () => {
         cashfree.checkout({
           paymentSessionId: result.data.payment_session_id,
           redirectTarget: "_modal",
-        }).then((checkoutResult: any) => {
+        }).then(async (checkoutResult: any) => {
           // Handle different result scenarios
           if (checkoutResult.error) {
             resolve({ 
