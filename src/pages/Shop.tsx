@@ -1,3 +1,10 @@
+/**
+ * Shop Page - WooCommerce Only
+ * 
+ * This page fetches products exclusively from WooCommerce.
+ * No static data fallback - if WooCommerce is not configured, shows error.
+ */
+
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
@@ -6,6 +13,7 @@ import { CandleCard } from "@/components/candle/CandleCard";
 import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/shop/ProductFilters";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import shopBanner from "@/assets/shop-banner.jpg";
 import { trackFilterUsage } from "@/lib/matomo";
 
@@ -13,19 +21,8 @@ import { trackFilterUsage } from "@/lib/matomo";
 import { useProducts, useCategories } from "@/hooks/useWooCommerce";
 import { isWooCommerceConfigured } from "@/lib/woocommerce";
 
-// Fallback static data
-import { 
-  candles as staticCandles, 
-  collections as staticCollections, 
-  getBestsellers as getStaticBestsellers,
-  getMinMaxPrice,
-} from "@/data/candles";
-
-// Get price range for filters
-const { min: defaultMinPrice, max: defaultMaxPrice } = getMinMaxPrice();
-
 const defaultFilters: FilterState = {
-  priceRange: [defaultMinPrice, defaultMaxPrice],
+  priceRange: [0, 10000],
   collections: [],
   scentTypes: [],
   sizes: [],
@@ -39,6 +36,45 @@ const ProductSkeleton = () => (
     <Skeleton className="aspect-square w-full rounded-lg" />
     <Skeleton className="h-4 w-3/4" />
     <Skeleton className="h-4 w-1/2" />
+  </div>
+);
+
+// Error state component
+const ErrorState = ({ 
+  title, 
+  description, 
+  onRetry 
+}: { 
+  title: string; 
+  description: string; 
+  onRetry?: () => void;
+}) => (
+  <div className="text-center py-20">
+    <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6">
+      <AlertCircle className="h-8 w-8 text-red-500" />
+    </div>
+    <h2 className="font-display text-2xl text-foreground mb-4">{title}</h2>
+    <p className="text-muted-foreground mb-8 max-w-md mx-auto">{description}</p>
+    {onRetry && (
+      <Button onClick={onRetry} variant="outline" className="gap-2">
+        <RefreshCw className="h-4 w-4" />
+        Try Again
+      </Button>
+    )}
+  </div>
+);
+
+// Not configured state
+const NotConfiguredState = () => (
+  <div className="min-h-screen flex flex-col bg-background">
+    <Header />
+    <main className="flex-1 pt-[137px] flex items-center justify-center">
+      <ErrorState
+        title="Store Not Connected"
+        description="The product catalog is not available. Please contact support if this issue persists."
+      />
+    </main>
+    <Footer />
   </div>
 );
 
@@ -58,26 +94,51 @@ const Shop = () => {
   // Check if WooCommerce is configured
   const wcConfigured = isWooCommerceConfigured();
 
-  // Fetch from WooCommerce if configured
-  const { data: wcData, isLoading: productsLoading } = useProducts({ per_page: 100 });
-  const { data: wcCategories, isLoading: categoriesLoading } = useCategories();
+  // Fetch from WooCommerce
+  const { 
+    data: wcData, 
+    isLoading: productsLoading, 
+    error: productsError,
+    refetch: refetchProducts 
+  } = useProducts({ per_page: 100 });
+  
+  const { 
+    data: wcCategories, 
+    isLoading: categoriesLoading,
+    error: categoriesError 
+  } = useCategories();
 
-  // Use WooCommerce data if available, otherwise fallback to static
-  const allCandles = wcConfigured && wcData?.candles ? wcData.candles : staticCandles;
-  const displayCollections = wcConfigured && wcCategories ? wcCategories : staticCollections;
+  // If WooCommerce is not configured, show error
+  if (!wcConfigured) {
+    return <NotConfiguredState />;
+  }
+
+  const allCandles = wcData?.candles || [];
+  const displayCollections = wcCategories || [];
   const bestsellers = allCandles.filter(c => c.bestseller);
 
-  const isLoading = wcConfigured && (productsLoading || categoriesLoading);
+  const isLoading = productsLoading || categoriesLoading;
+  const hasError = productsError || categoriesError;
 
   // Calculate min/max price from actual data
   const { minPrice, maxPrice } = useMemo(() => {
     const prices = allCandles.map(c => c.price);
-    if (prices.length === 0) return { minPrice: defaultMinPrice, maxPrice: defaultMaxPrice };
+    if (prices.length === 0) return { minPrice: 0, maxPrice: 10000 };
     return {
       minPrice: Math.min(...prices),
       maxPrice: Math.max(...prices),
     };
   }, [allCandles]);
+
+  // Update default price range when data loads
+  useMemo(() => {
+    if (minPrice > 0 && maxPrice > 0 && filters.priceRange[0] === 0 && filters.priceRange[1] === 10000) {
+      setFilters(prev => ({
+        ...prev,
+        priceRange: [minPrice, maxPrice],
+      }));
+    }
+  }, [minPrice, maxPrice]);
 
   // Count active filters
   const activeFilterCount = useMemo(() => {
@@ -144,8 +205,6 @@ const Shop = () => {
   const clearFilters = () => {
     setFilters({ ...defaultFilters, priceRange: [minPrice, maxPrice] });
     setSearchParams({});
-    
-    // Track filter clear
     trackFilterUsage('Clear', 'All Filters');
   };
 
@@ -177,6 +236,7 @@ const Shop = () => {
     }
     
     setFilters(newFilters);
+    
     // Update URL if single collection selected
     if (newFilters.collections.length === 1) {
       setSearchParams({ collection: newFilters.collections[0] });
@@ -214,82 +274,98 @@ const Shop = () => {
         </section>
 
         {/* Quick Filters - Hidden on mobile since we have sidebar filter */}
-        <section className="hidden lg:block py-6 border-b border-border/30 bg-secondary/10">
-          <div className="container mx-auto px-6 lg:px-12">
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button
-                variant={!collectionSlug && !showBestsellers && filters.collections.length === 0 ? "default" : "outline"}
-                size="sm"
-                onClick={clearFilters}
-              >
-                All
-              </Button>
-              {displayCollections.map((col) => (
+        {!hasError && !isLoading && displayCollections.length > 0 && (
+          <section className="hidden lg:block py-6 border-b border-border/30 bg-secondary/10">
+            <div className="container mx-auto px-6 lg:px-12">
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 <Button
-                  key={col.id}
-                  variant={filters.collections.includes(col.slug) ? "default" : "outline"}
+                  variant={!collectionSlug && !showBestsellers && filters.collections.length === 0 ? "default" : "outline"}
                   size="sm"
-                  onClick={() => handleFiltersChange({ ...filters, collections: [col.slug] })}
+                  onClick={clearFilters}
                 >
-                  {col.name}
+                  All
                 </Button>
-              ))}
-              <Button
-                variant={showBestsellers ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSearchParams({ bestsellers: "true" })}
-              >
-                Bestsellers
-              </Button>
+                {displayCollections.map((col) => (
+                  <Button
+                    key={col.id}
+                    variant={filters.collections.includes(col.slug) ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handleFiltersChange({ ...filters, collections: [col.slug] })}
+                  >
+                    {col.name}
+                  </Button>
+                ))}
+                <Button
+                  variant={showBestsellers ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSearchParams({ bestsellers: "true" })}
+                >
+                  Bestsellers
+                </Button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Products Grid with Sidebar */}
         <section className="py-16 lg:py-24">
           <div className="container mx-auto px-6 lg:px-12">
-            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-              {/* Filters Sidebar */}
-              <ProductFilters
-                filters={filters}
-                onFiltersChange={handleFiltersChange}
-                onClearFilters={clearFilters}
-                activeFilterCount={activeFilterCount}
-                minPrice={minPrice}
-                maxPrice={maxPrice}
+            {/* Error State */}
+            {hasError && (
+              <ErrorState
+                title="Unable to Load Products"
+                description="We couldn't fetch the product catalog. Please check your connection and try again."
+                onRetry={() => refetchProducts()}
               />
+            )}
 
-              {/* Products */}
-              <div className="flex-1">
-                {isLoading ? (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
-                    {[...Array(6)].map((_, i) => (
-                      <ProductSkeleton key={i} />
-                    ))}
-                  </div>
-                ) : displayCandles.length > 0 ? (
-                  <>
-                    <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
-                      {displayCandles.length} {displayCandles.length === 1 ? 'product' : 'products'}
-                      {wcConfigured && <span className="ml-2 text-primary">• Live from store</span>}
-                    </p>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
-                      {displayCandles.map((candle, index) => (
-                        <CandleCard key={candle.id} candle={candle} index={index} />
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-20">
-                    <p className="font-display text-2xl text-foreground mb-4">No candles found</p>
-                    <p className="text-muted-foreground mb-8">Try adjusting your filters</p>
-                    <Button onClick={clearFilters} variant="gold">
-                      Clear Filters
-                    </Button>
-                  </div>
-                )}
+            {/* Loading State */}
+            {isLoading && !hasError && (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8">
+                {[...Array(8)].map((_, i) => (
+                  <ProductSkeleton key={i} />
+                ))}
               </div>
-            </div>
+            )}
+
+            {/* Products */}
+            {!isLoading && !hasError && (
+              <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+                {/* Filters Sidebar */}
+                <ProductFilters
+                  filters={filters}
+                  onFiltersChange={handleFiltersChange}
+                  onClearFilters={clearFilters}
+                  activeFilterCount={activeFilterCount}
+                  minPrice={minPrice}
+                  maxPrice={maxPrice}
+                />
+
+                {/* Products */}
+                <div className="flex-1">
+                  {displayCandles.length > 0 ? (
+                    <>
+                      <p className="text-xs text-muted-foreground text-center lg:text-left mb-8 lg:mb-12 uppercase tracking-wider">
+                        {displayCandles.length} {displayCandles.length === 1 ? 'product' : 'products'}
+                      </p>
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
+                        {displayCandles.map((candle, index) => (
+                          <CandleCard key={candle.id} candle={candle} index={index} />
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-20">
+                      <p className="font-display text-2xl text-foreground mb-4">No candles found</p>
+                      <p className="text-muted-foreground mb-8">Try adjusting your filters</p>
+                      <Button onClick={clearFilters} variant="gold">
+                        Clear Filters
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
